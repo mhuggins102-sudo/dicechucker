@@ -2,14 +2,13 @@ import { rollDie, createDie, animateRoll, applyState } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, sleep } from '../ui.js';
 
 const POOL = 10;
+const ROUNDS = 3;
 
 const rules = `
   <p>Pool of 10 dice. One die is rolled at a time. After each roll, call <strong>Higher</strong> or <strong>Lower</strong> for the next roll — or <strong>Stop</strong> and bank.</p>
-  <p>If the next roll doesn't strictly match your call (a tie counts as wrong), you <strong>bust</strong> and the round scores 0.</p>
-  <p>Score = <strong>2× the total pips</strong> of every die rolled. Best of 3 rounds counts.</p>
+  <p>If the next roll is strictly in the wrong direction, you <strong>bust</strong> and the round scores 0. A <strong>tie</strong> doesn't bust — the die is wasted (no pips added) but still counts against the 10-die pool.</p>
+  <p>Score = <strong>2× the total pips</strong> of every die that counted. Best of 3 rounds counts.</p>
 `;
-
-const ROUNDS = 3;
 
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
@@ -21,90 +20,102 @@ async function playRound(host, roundIdx, updateHeader) {
     host.appendChild(status);
     host.appendChild(callRow);
 
-    const rolled = [];
     const dieEls = [];
-    let pendingCall = null;
+    let rolls = 0;
+    let pips = 0;
+    let reference = null;
     let done = false;
+    let busy = false;
 
-    const currentValue = () => rolled[rolled.length - 1];
-    const pipTotal = () => rolled.reduce((a, b) => a + b, 0);
-    const score = () => pipTotal() * 2;
+    const score = () => pips * 2;
 
     function renderCallButtons() {
       clear(callRow);
       if (done) return;
-      if (rolled.length === 0) {
+      if (rolls === 0) {
         callRow.appendChild(button('Roll first die', { onClick: doFirstRoll, variant: 'good' }));
         return;
       }
-      if (rolled.length >= POOL) {
-        // Max rolls reached; auto-stop.
+      if (rolls >= POOL) {
         finish(score());
         return;
       }
-      const cv = currentValue();
-      callRow.appendChild(button(`▲ Higher than ${cv}`, {
+      callRow.appendChild(button(`▲ Higher than ${reference}`, {
         onClick: () => rollWithCall('higher'),
         variant: 'good',
       }));
       callRow.appendChild(button(`Stop & bank ${score()}`, {
         onClick: () => finish(score()),
       }));
-      callRow.appendChild(button(`▼ Lower than ${cv}`, {
+      callRow.appendChild(button(`▼ Lower than ${reference}`, {
         onClick: () => rollWithCall('lower'),
         variant: 'good',
       }));
     }
 
-    function renderStatus(message) {
-      status.innerHTML = message;
-    }
+    function renderStatus(html) { status.innerHTML = html; }
 
     async function doFirstRoll() {
+      if (busy) return;
+      busy = true;
       clear(callRow);
       const v = rollDie();
-      rolled.push(v);
+      rolls += 1;
+      pips += v;
+      reference = v;
       const d = createDie(v);
       dieEls.push(d);
       tray.appendChild(d);
       applyState(d, { highlight: true });
       await animateRoll(d, v);
-      updateHeader({ score: score(), pips: pipTotal(), rolls: rolled.length });
+      updateHeader({ score: score(), pips, rolls });
       renderStatus(`Rolled <strong>${v}</strong>. Predict the next one — or stop and bank.`);
+      busy = false;
       renderCallButtons();
     }
 
     async function rollWithCall(call) {
-      pendingCall = call;
+      if (busy) return;
+      busy = true;
       clear(callRow);
-      const previous = currentValue();
-      // remove highlight on previous die
+      const prev = reference;
       dieEls.forEach(d => applyState(d, { highlight: false }));
 
       const v = rollDie();
-      rolled.push(v);
+      rolls += 1;
       const d = createDie(v);
       dieEls.push(d);
       tray.appendChild(d);
       applyState(d, { highlight: true });
       await animateRoll(d, v);
 
-      const correct =
-        (call === 'higher' && v > previous) ||
-        (call === 'lower' && v < previous);
-
-      if (!correct) {
-        applyState(d, { highlight: false, bust: true });
-        const why = v === previous ? `tied with ${previous}` : `${v} is not ${call} than ${previous}`;
-        bust(why);
+      if (v === prev) {
+        applyState(d, { highlight: false, dim: true });
+        updateHeader({ score: score(), pips, rolls });
+        const remaining = POOL - rolls;
+        renderStatus(remaining > 0
+          ? `Tied <strong>${v}</strong> — die wasted. Still ${remaining} roll${remaining === 1 ? '' : 's'} left. Call against <strong>${reference}</strong> again.`
+          : `Tied on the final die — banking <strong>${score()}</strong>.`);
+        busy = false;
+        renderCallButtons();
         return;
       }
 
-      updateHeader({ score: score(), pips: pipTotal(), rolls: rolled.length });
-      const remaining = POOL - rolled.length;
+      const correct = (call === 'higher' && v > prev) || (call === 'lower' && v < prev);
+      if (!correct) {
+        applyState(d, { highlight: false, bust: true });
+        bust(`${v} is not ${call} than ${prev}`);
+        return;
+      }
+
+      pips += v;
+      reference = v;
+      updateHeader({ score: score(), pips, rolls });
+      const remaining = POOL - rolls;
       renderStatus(remaining > 0
-        ? `Rolled <strong>${v}</strong>. Pips so far: <strong>${pipTotal()}</strong> (×2 = <strong>${score()}</strong>). ${remaining} roll${remaining === 1 ? '' : 's'} left.`
+        ? `Rolled <strong>${v}</strong>. Pips so far: <strong>${pips}</strong> (×2 = <strong>${score()}</strong>). ${remaining} roll${remaining === 1 ? '' : 's'} left.`
         : `Pool exhausted — stopping with <strong>${score()}</strong>.`);
+      busy = false;
       renderCallButtons();
     }
 
@@ -112,16 +123,16 @@ async function playRound(host, roundIdx, updateHeader) {
       done = true;
       clear(callRow);
       toast(`Bust — ${reason}`, { tone: 'bad', duration: 2200 });
-      updateHeader({ score: 0, pips: 0, rolls: rolled.length, bust: true });
+      updateHeader({ score: 0, pips: 0, rolls, bust: true });
       setTimeout(() => resolve(0), 1400);
     }
 
     function finish(finalScore) {
       done = true;
       clear(callRow);
-      dieEls.forEach(d => applyState(d, { highlight: false, frozen: true, selectable: false }));
+      dieEls.forEach(d => applyState(d, { highlight: false, frozen: !d.dataset.dim, selectable: false }));
       toast(`Round ${roundIdx + 1}: ${finalScore} pts`, { tone: 'good' });
-      updateHeader({ score: finalScore, pips: pipTotal(), rolls: rolled.length, done: true });
+      updateHeader({ score: finalScore, pips, rolls, done: true });
       setTimeout(() => resolve(finalScore), 900);
     }
 
@@ -132,7 +143,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'hilo',
   name: 'Higher or Lower',
-  blurb: 'Predict the next die. Tie busts.',
+  blurb: 'Predict the next die. Ties waste the die.',
   rulesHtml: rules,
   rounds: ROUNDS,
 
@@ -149,7 +160,7 @@ export default {
     const renderHead = (ctx = {}) => {
       clear(head);
       head.appendChild(chip('Score', ctx.score ?? 0, { tone: ctx.bust ? 'bust' : 'accent' }));
-      head.appendChild(chip('Pips ×2', ctx.pips ?? 0));
+      head.appendChild(chip('Pips', ctx.pips ?? 0));
       head.appendChild(chip('Rolls', `${ctx.rolls ?? 0} / ${POOL}`));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };

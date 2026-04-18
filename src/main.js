@@ -175,11 +175,7 @@ async function runDecathlon() {
     }
 
     clear(playArea);
-    const sub = el('section', { class: 'panel tight' }, [
-      el('div', { class: 'event-head' }, [el('h2', { text: g.name })]),
-      el('div', { class: 'rules', html: g.rulesHtml }),
-    ]);
-    playArea.appendChild(sub);
+    playArea.appendChild(eventHeader(g));
     const body = el('div');
     playArea.appendChild(body);
 

@@ -19,9 +19,7 @@ async function playRound(host, roundIdx, updateHeader) {
     const tray = el('div', { class: 'dice-tray' });
     const status = el('div', { class: 'rules', html: 'Roll stage 1 — 1 die.' });
     const controls = el('div', { class: 'button-row' });
-    const stagesPill = el('div', { class: 'stage-pills' });
 
-    host.appendChild(stagesPill);
     host.appendChild(tray);
     host.appendChild(status);
     host.appendChild(controls);
@@ -31,19 +29,6 @@ async function playRound(host, roundIdx, updateHeader) {
     let done = false;
     let busy = false;
     const rolledStages = [];     // [{ values, dieEls, sum }]
-
-    function renderStagePills() {
-      clear(stagesPill);
-      STAGES.forEach((count, i) => {
-        let cls = 'pill';
-        let label = `Stage ${i + 1}: ${count}d`;
-        const s = rolledStages[i];
-        if (s?.bust) { cls += ' bust'; label += ` — bust`; }
-        else if (s) { cls += ' done'; label += ` +${s.sum}`; }
-        else if (i === stageIdx && !done) { cls += ' active'; }
-        stagesPill.appendChild(el('span', { class: cls, text: label }));
-      });
-    }
 
     function renderControls() {
       clear(controls);
@@ -92,7 +77,6 @@ async function playRound(host, roundIdx, updateHeader) {
       if (bust) {
         dieEls.forEach(d => applyState(d, { bust: true }));
         rolledStages.push({ values, dieEls, sum, bust: true });
-        renderStagePills();
         const dup = findDuplicates(values);
         bustRound(`stage ${stageIdx + 1} rolled duplicate ${dup}`);
         return;
@@ -102,7 +86,6 @@ async function playRound(host, roundIdx, updateHeader) {
       rolledStages.push({ values, dieEls, sum });
       dieEls.forEach(d => applyState(d, { frozen: true }));
       stageIdx += 1;
-      renderStagePills();
       updateHeader({ total, stage: stageIdx });
 
       if (stageIdx >= STAGES.length) {
@@ -146,7 +129,6 @@ async function playRound(host, roundIdx, updateHeader) {
       setTimeout(() => resolve(score), 900);
     }
 
-    renderStagePills();
     renderControls();
   });
 }
