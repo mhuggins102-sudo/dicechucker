@@ -185,7 +185,19 @@ kbd {
 .btn.danger { background: var(--accent-2); color: #fff; }
 .btn.good { background: var(--good); color: #06282a; }
 
-.button-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.button-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+}
+.button-row .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ---------- Event panel ---------- */
 
@@ -205,11 +217,38 @@ kbd {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
+.event-head > * { min-width: 0; }
 .event-head h2 { margin: 0; font-size: 22px; }
 .event-head .sub { color: var(--ink-dim); margin-top: 2px; font-size: 13px; }
+.event-head .chip {
+  background: var(--bg-2);
+  border-radius: 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.05;
+}
+.event-head .chip .label {
+  color: var(--ink-dim);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.event-head .chip .value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.event-head .btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
 
 .title-toggle {
   appearance: none;
@@ -248,26 +287,35 @@ kbd {
 .rules-collapse .rules { margin-top: 4px; }
 
 .score-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 .score-strip .chip {
+  flex: 1 1 0;
+  min-width: 0;
   background: var(--bg-2);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
 }
 .score-strip .chip .label {
   color: var(--ink-dim);
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .score-strip .chip .value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .score-strip .chip.bust .value { color: var(--bad); }
 .score-strip .chip.good .value { color: var(--good); }
@@ -376,17 +424,24 @@ kbd {
 
 .round-pills {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 .round-pill {
-  padding: 6px 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding: 5px 8px;
   border-radius: 999px;
   background: var(--bg-2);
   border: 1px solid rgba(255, 255, 255, 0.06);
   font-size: 13px;
   color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .round-pill.active { border-color: var(--accent); color: var(--accent); }
 .round-pill.done { border-color: var(--good); color: var(--good); }
@@ -447,11 +502,17 @@ kbd {
 
 .call-buttons {
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: 100%;
 }
-.call-buttons .btn { min-width: 120px; }
+.call-buttons .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .pair-list {
   display: flex;
@@ -518,17 +579,48 @@ kbd {
 .stage-pills .pill.bust { color: var(--bad); border-color: var(--bad); }
 .stage-pills .pill.active { color: var(--accent); border-color: var(--accent); }
 
+/* ---------- Event-end summary (folded into play container) ---------- */
+
+.event-end {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.event-end-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.event-end-score {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.event-end-best {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
 @media (max-width: 480px) {
   .top { padding: 10px 14px; }
   .stage { padding: 12px 10px 18px; }
-  .die { width: 46px; height: 46px; padding: 6px; }
+  .die { width: 44px; height: 44px; padding: 6px; }
   .die .pip { width: 8px; height: 8px; }
-  .dice-tray { gap: 8px; padding: 8px; min-height: 60px; }
-  .panel { padding: 12px; gap: 10px; }
-  .event-head h2, .title-toggle { font-size: 18px; }
-  .score-strip .chip { padding: 8px 10px; }
-  .score-strip .chip .value { font-size: 16px; }
-  .big-number .value { font-size: 32px; }
-  .btn { padding: 9px 14px; font-size: 14px; }
+  .dice-tray { gap: 6px; padding: 8px; min-height: 56px; }
+  .panel { padding: 10px; gap: 8px; }
+  .event-head h2, .title-toggle { font-size: 17px; }
+  .event-head .chip .value { font-size: 15px; }
+  .event-head .chip .label { font-size: 9px; }
+  .score-strip { gap: 6px; }
+  .score-strip .chip { padding: 6px 8px; }
+  .score-strip .chip .label { font-size: 10px; }
+  .score-strip .chip .value { font-size: 15px; }
+  .round-pill { font-size: 11px; padding: 4px 6px; }
+  .big-number .value { font-size: 28px; }
+  .btn { padding: 8px 10px; font-size: 13px; }
   .bottom { padding: 10px; font-size: 12px; }
 }

@@ -113,11 +113,14 @@ async function runEvent(game) {
 
   const previousBest = getBestForEvent(game.id);
   const { improved, best } = recordEventScore(game.id, score);
-  const result = el('div', { class: 'panel' }, [
-    el('h3', { text: `Event score: ${score}` }),
-    el('p', { text: improved
-      ? (previousBest ? `New best! Previous best: ${previousBest}` : 'New best! (First recorded score.)')
-      : `Best score: ${best}` }),
+
+  playArea.appendChild(el('div', { class: 'event-end' }, [
+    el('div', { class: 'event-end-summary' }, [
+      el('div', { class: 'event-end-score', text: `Score: ${score}` }),
+      el('div', { class: 'event-end-best', text: improved
+        ? (previousBest ? `New best (was ${previousBest})` : 'New best')
+        : `Best: ${best}` }),
+    ]),
     el('div', { class: 'button-row' }, [
       button('Play again', {
         onClick: () => runEvent(game),
@@ -128,8 +131,7 @@ async function runEvent(game) {
         variant: 'ghost',
       }),
     ]),
-  ]);
-  screen.appendChild(result);
+  ]));
 }
 
 async function runDecathlon() {
@@ -137,23 +139,21 @@ async function runDecathlon() {
 
   const titleNode = el('h2', { text: 'Decathlon' });
   const subNode = el('div', { class: 'sub', text: '' });
+  const totalChip = chip('Total Score', 0, { tone: 'accent' });
   const header = el('section', { class: 'panel tight' }, [
     el('div', { class: 'event-head' }, [
       el('div', {}, [titleNode, subNode]),
-      el('div', { class: 'button-row' }, [
-        button('Quit', {
-          onClick: () => {
-            if (confirm('Quit the decathlon? Your run won\'t be saved.')) {
-              location.hash = '#/';
-            }
-          },
-          variant: 'ghost',
-        }),
-      ]),
+      totalChip,
+      button('Quit', {
+        onClick: () => {
+          if (confirm('Quit the decathlon? Your run won\'t be saved.')) {
+            location.hash = '#/';
+          }
+        },
+        variant: 'ghost',
+      }),
     ]),
   ]);
-  const progressStrip = el('div', { class: 'score-strip' });
-  header.appendChild(progressStrip);
   screen.appendChild(header);
 
   const playArea = el('div', { class: 'panel' });
@@ -162,17 +162,14 @@ async function runDecathlon() {
   const perEvent = {};
   let total = 0;
 
+  function setTotal(value) {
+    totalChip.querySelector('.value').textContent = String(value);
+  }
+
   for (let i = 0; i < games.length; i++) {
     const g = games[i];
     subNode.textContent = `Event ${i + 1} of ${games.length}: ${g.name}`;
-    clear(progressStrip);
-    progressStrip.appendChild(chip('Event', `${i + 1}/${games.length}`));
-    progressStrip.appendChild(chip('Total so far', total, { tone: 'accent' }));
-    for (const g2 of games) {
-      if (perEvent[g2.id] !== undefined) {
-        progressStrip.appendChild(chip(g2.name, perEvent[g2.id], { tone: perEvent[g2.id] > 0 ? 'good' : 'bust' }));
-      }
-    }
+    setTotal(total);
 
     clear(playArea);
     playArea.appendChild(eventHeader(g));
@@ -182,11 +179,12 @@ async function runDecathlon() {
     const score = await g.play(body);
     perEvent[g.id] = score;
     total += score;
+    setTotal(total);
     recordEventScore(g.id, score);
   }
 
-  clear(progressStrip);
-  progressStrip.appendChild(chip('Final total', total, { tone: 'accent' }));
+  subNode.textContent = 'Complete';
+  setTotal(total);
 
   const { improved } = recordDecathlon(total, perEvent);
 

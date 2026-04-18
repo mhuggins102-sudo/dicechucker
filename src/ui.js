@@ -46,10 +46,10 @@ export function roundPills(totalRounds, currentRound, outcomes) {
   for (let i = 0; i < totalRounds; i++) {
     const outcome = outcomes[i];
     let cls = 'round-pill';
-    let label = `Round ${i + 1}`;
-    if (outcome?.bust) { cls += ' bust'; label += ' — bust'; }
-    else if (outcome?.done) { cls += ' done'; label += ` — ${outcome.score}`; }
-    else if (i === currentRound) { cls += ' active'; label += ' — playing'; }
+    let label = `R${i + 1}`;
+    if (outcome?.bust) { cls += ' bust'; label += ': ×'; }
+    else if (outcome?.done) { cls += ' done'; label += `: ${outcome.score}`; }
+    else if (i === currentRound) { cls += ' active'; label += ': …'; }
     wrap.appendChild(el('span', { class: cls, text: label }));
   }
   return wrap;
