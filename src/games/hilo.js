@@ -6,7 +6,7 @@ const POOL = 10;
 const rules = `
   <p>Pool of 10 dice. One die is rolled at a time. After each roll, call <strong>Higher</strong> or <strong>Lower</strong> for the next roll — or <strong>Stop</strong> and bank.</p>
   <p>If the next roll doesn't strictly match your call (a tie counts as wrong), you <strong>bust</strong> and the round scores 0.</p>
-  <p>Stopping scores the total pips of every die rolled. Best of 5 rounds counts.</p>
+  <p>Score = <strong>2× the total pips</strong> of every die rolled. Best of 5 rounds counts.</p>
 `;
 
 const ROUNDS = 5;
@@ -27,7 +27,8 @@ async function playRound(host, roundIdx, updateHeader) {
     let done = false;
 
     const currentValue = () => rolled[rolled.length - 1];
-    const total = () => rolled.reduce((a, b) => a + b, 0);
+    const pipTotal = () => rolled.reduce((a, b) => a + b, 0);
+    const score = () => pipTotal() * 2;
 
     function renderCallButtons() {
       clear(callRow);
@@ -38,7 +39,7 @@ async function playRound(host, roundIdx, updateHeader) {
       }
       if (rolled.length >= POOL) {
         // Max rolls reached; auto-stop.
-        finish(total());
+        finish(score());
         return;
       }
       const cv = currentValue();
@@ -46,8 +47,8 @@ async function playRound(host, roundIdx, updateHeader) {
         onClick: () => rollWithCall('higher'),
         variant: 'good',
       }));
-      callRow.appendChild(button('Stop & bank', {
-        onClick: () => finish(total()),
+      callRow.appendChild(button(`Stop & bank ${score()}`, {
+        onClick: () => finish(score()),
       }));
       callRow.appendChild(button(`▼ Lower than ${cv}`, {
         onClick: () => rollWithCall('lower'),
@@ -68,7 +69,7 @@ async function playRound(host, roundIdx, updateHeader) {
       tray.appendChild(d);
       applyState(d, { highlight: true });
       await animateRoll(d, v);
-      updateHeader({ total: total(), rolls: rolled.length });
+      updateHeader({ score: score(), pips: pipTotal(), rolls: rolled.length });
       renderStatus(`Rolled <strong>${v}</strong>. Predict the next one — or stop and bank.`);
       renderCallButtons();
     }
@@ -99,11 +100,11 @@ async function playRound(host, roundIdx, updateHeader) {
         return;
       }
 
-      updateHeader({ total: total(), rolls: rolled.length });
+      updateHeader({ score: score(), pips: pipTotal(), rolls: rolled.length });
       const remaining = POOL - rolled.length;
       renderStatus(remaining > 0
-        ? `Rolled <strong>${v}</strong>. Total so far: <strong>${total()}</strong>. ${remaining} roll${remaining === 1 ? '' : 's'} left.`
-        : `Pool exhausted — stopping with <strong>${total()}</strong>.`);
+        ? `Rolled <strong>${v}</strong>. Pips so far: <strong>${pipTotal()}</strong> (×2 = <strong>${score()}</strong>). ${remaining} roll${remaining === 1 ? '' : 's'} left.`
+        : `Pool exhausted — stopping with <strong>${score()}</strong>.`);
       renderCallButtons();
     }
 
@@ -111,17 +112,17 @@ async function playRound(host, roundIdx, updateHeader) {
       done = true;
       clear(callRow);
       toast(`Bust — ${reason}`, { tone: 'bad', duration: 2200 });
-      updateHeader({ total: 0, rolls: rolled.length, bust: true });
+      updateHeader({ score: 0, pips: 0, rolls: rolled.length, bust: true });
       setTimeout(() => resolve(0), 1400);
     }
 
-    function finish(score) {
+    function finish(finalScore) {
       done = true;
       clear(callRow);
       dieEls.forEach(d => applyState(d, { highlight: false, frozen: true, selectable: false }));
-      toast(`Round ${roundIdx + 1}: ${score} pts`, { tone: 'good' });
-      updateHeader({ total: score, rolls: rolled.length, done: true });
-      setTimeout(() => resolve(score), 900);
+      toast(`Round ${roundIdx + 1}: ${finalScore} pts`, { tone: 'good' });
+      updateHeader({ score: finalScore, pips: pipTotal(), rolls: rolled.length, done: true });
+      setTimeout(() => resolve(finalScore), 900);
     }
 
     renderCallButtons();
@@ -147,7 +148,8 @@ export default {
 
     const renderHead = (ctx = {}) => {
       clear(head);
-      head.appendChild(chip('Total', ctx.total ?? 0, { tone: ctx.bust ? 'bust' : '' }));
+      head.appendChild(chip('Score', ctx.score ?? 0, { tone: ctx.bust ? 'bust' : 'accent' }));
+      head.appendChild(chip('Pips ×2', ctx.pips ?? 0));
       head.appendChild(chip('Rolls', `${ctx.rolls ?? 0} / ${POOL}`));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };
