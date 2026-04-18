@@ -288,17 +288,16 @@ kbd {
 
 .score-strip {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .score-strip .chip {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: max-content;
   background: var(--bg-2);
   border-radius: 10px;
   padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden;
 }
 .score-strip .chip .label {
   color: var(--ink-dim);
@@ -306,16 +305,12 @@ kbd {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .score-strip .chip .value {
   font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .score-strip .chip.bust .value { color: var(--bad); }
 .score-strip .chip.good .value { color: var(--good); }
@@ -450,24 +445,20 @@ kbd {
 /* ---------- Toast ---------- */
 
 .toast {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
+  align-self: center;
   background: var(--panel-2);
   color: var(--ink);
-  padding: 10px 16px;
+  padding: 8px 16px;
   border-radius: 999px;
   box-shadow: var(--shadow);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 180ms ease;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 100%;
+  text-align: center;
 }
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
-}
+.toast.show { opacity: 1; }
 .toast.good { border-color: var(--good); }
 .toast.bad { border-color: var(--bad); }
 
@@ -617,8 +608,6 @@ kbd {
   .event-head .chip .label { font-size: 9px; }
   .score-strip { gap: 6px; }
   .score-strip .chip { padding: 6px 8px; }
-  .score-strip .chip .label { font-size: 10px; }
-  .score-strip .chip .value { font-size: 15px; }
   .round-pill { font-size: 11px; padding: 4px 6px; }
   .big-number .value { font-size: 28px; }
   .btn { padding: 8px 10px; font-size: 13px; }

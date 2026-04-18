@@ -46,7 +46,7 @@ async function playRound(host, roundIdx, updateHeader) {
         }));
       }
       if (rollsUsed > 0) {
-        controls.appendChild(button(`Stop & bank ${total}`, {
+        controls.appendChild(button('Stop', {
           onClick: () => finish(total),
         }));
       }

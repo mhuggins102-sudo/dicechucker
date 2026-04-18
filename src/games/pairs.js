@@ -103,25 +103,20 @@ async function playRound(host, roundIdx, updateHeader) {
         state.staged.length === 2 &&
         (state.S === null || stageSum === state.S);
 
-      controls.appendChild(button(
-        canFreezeStage
-          ? (state.S === null ? `Freeze pair (sum ${stageSum})` : `Freeze pair of ${state.S}`)
-          : 'Freeze pair',
-        { onClick: onFreezeClick, disabled: !canFreezeStage, variant: 'good' },
-      ));
+      controls.appendChild(button('Freeze pair', {
+        onClick: onFreezeClick, disabled: !canFreezeStage, variant: 'good',
+      }));
 
       const hasFrozenThisRoll = state.pairs.some(p => p.rollIdx === state.rollIdx());
-      // rollIdx helper below: number of rolls so far. Must freeze at least one pair this roll.
-
       const canProceed = !state.justRolled || hasFrozenThisRoll;
       const unfrozenCount = state.values.length - state.frozen.size;
 
-      controls.appendChild(button('Reroll remaining', {
+      controls.appendChild(button('Reroll', {
         onClick: onRerollClick,
         disabled: !canProceed || unfrozenCount < 2,
         title: unfrozenCount < 2 ? 'Need at least 2 unfrozen dice' : '',
       }));
-      controls.appendChild(button('Stop', {
+      controls.appendChild(button('Stop & Bank', {
         onClick: onStopClick,
         disabled: !canProceed || state.pairs.length === 0,
         variant: 'ghost',
@@ -160,6 +155,7 @@ async function playRound(host, roundIdx, updateHeader) {
       state.frozen.add(b);
       state.pairs.push({ a, b, sum, rollIdx: state.rollsDone });
       state.staged = [];
+      if (subInfo.parentNode) subInfo.remove();
       render();
     }
 

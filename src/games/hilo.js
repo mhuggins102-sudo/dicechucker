@@ -40,16 +40,16 @@ async function playRound(host, roundIdx, updateHeader) {
         finish(score());
         return;
       }
-      callRow.appendChild(button(`▲ Higher than ${reference}`, {
+      callRow.appendChild(button('▲ Higher', {
         onClick: () => rollWithCall('higher'),
         variant: 'good',
       }));
-      callRow.appendChild(button(`Stop & bank ${score()}`, {
-        onClick: () => finish(score()),
-      }));
-      callRow.appendChild(button(`▼ Lower than ${reference}`, {
+      callRow.appendChild(button('▼ Lower', {
         onClick: () => rollWithCall('lower'),
         variant: 'good',
+      }));
+      callRow.appendChild(button('Stop & Bank', {
+        onClick: () => finish(score()),
       }));
     }
 

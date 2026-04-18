@@ -54,7 +54,7 @@ async function playRound(host, roundIdx, updateHeader) {
         rolls === 0 ? `Roll (×${mult})` : `Roll again (×${mult})`,
         { onClick: doRoll, variant: 'good' },
       ));
-      controls.appendChild(button(`Stop & bank ${score}`, {
+      controls.appendChild(button('Stop & Bank', {
         onClick: () => finish(score),
         disabled: rolls === 0,
       }));

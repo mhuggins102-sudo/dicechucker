@@ -44,7 +44,7 @@ async function playRound(host, roundIdx, updateHeader) {
         { onClick: rollNextStage, variant: 'good' },
       ));
       if (!isFirst) {
-        controls.appendChild(button(`Stop & bank ${total}`, {
+        controls.appendChild(button('Stop & Bank', {
           onClick: () => finish(total),
         }));
       }

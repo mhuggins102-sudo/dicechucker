@@ -57,10 +57,13 @@ export function roundPills(totalRounds, currentRound, outcomes) {
 
 let toastTimer = null;
 export function toast(message, { tone = '', duration = 1800 } = {}) {
-  let node = document.querySelector('.toast');
+  const host = document.querySelector('.screen') || document.body;
+  let node = host.querySelector(':scope > .toast');
   if (!node) {
     node = el('div', { class: 'toast' });
-    document.body.appendChild(node);
+    host.appendChild(node);
+  } else {
+    host.appendChild(node);
   }
   node.className = `toast ${tone}`.trim();
   node.textContent = message;
