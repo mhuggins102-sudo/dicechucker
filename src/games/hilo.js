@@ -6,10 +6,10 @@ const POOL = 10;
 const rules = `
   <p>Pool of 10 dice. One die is rolled at a time. After each roll, call <strong>Higher</strong> or <strong>Lower</strong> for the next roll — or <strong>Stop</strong> and bank.</p>
   <p>If the next roll doesn't strictly match your call (a tie counts as wrong), you <strong>bust</strong> and the round scores 0.</p>
-  <p>Score = <strong>2× the total pips</strong> of every die rolled. Best of 5 rounds counts.</p>
+  <p>Score = <strong>2× the total pips</strong> of every die rolled. Best of 3 rounds counts.</p>
 `;
 
-const ROUNDS = 5;
+const ROUNDS = 3;
 
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
