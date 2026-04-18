@@ -6,8 +6,7 @@ const stage = document.getElementById('stage');
 
 function route() {
   const hash = location.hash || '#/';
-  if (hash === '#/' || hash === '') return renderHome();
-  if (hash === '#/decathlon') return renderDecathlonIntro();
+  if (hash === '#/' || hash === '' || hash === '#/decathlon') return renderDecathlonHome();
   if (hash === '#/decathlon/play') return runDecathlon();
   if (hash === '#/arcade') return renderArcade();
   if (hash.startsWith('#/event/')) {
@@ -15,7 +14,7 @@ function route() {
     const game = gameById(id);
     if (game) return runEvent(game);
   }
-  renderHome();
+  renderDecathlonHome();
 }
 
 window.addEventListener('hashchange', route);
@@ -28,26 +27,22 @@ function mountScreen() {
   return screen;
 }
 
-function renderHome() {
+function renderDecathlonHome() {
   const screen = mountScreen();
   const best = getBestDecathlon();
 
   screen.appendChild(el('section', { class: 'hero' }, [
-    el('h1', { text: 'Dicechucker' }),
-    el('p', { text: 'A solo dice decathlon — a string of short mini-games, each with its own push-your-luck mechanic. Play them all for a grand total, or pick one from the arcade.' }),
+    el('h1', { text: 'Decathlon' }),
+    el('p', { text: `Play all ${games.length} events in sequence. Each event is best-of-N rounds. Your event scores sum to a grand total.` }),
     el('div', { class: 'button-row' }, [
-      button('Play Decathlon', {
-        onClick: () => { location.hash = '#/decathlon'; },
+      button('Start decathlon', {
+        onClick: () => { location.hash = '#/decathlon/play'; },
         variant: 'good',
-      }),
-      button('Browse Arcade', {
-        onClick: () => { location.hash = '#/arcade'; },
-        variant: 'ghost',
       }),
     ]),
     best
-      ? el('p', { text: `Best decathlon so far: ${best.total} (on ${best.date})` })
-      : el('p', { text: 'No decathlon completed yet. Be the first.' }),
+      ? el('p', { text: `Personal best: ${best.total} pts (${best.date}).` })
+      : el('p', { text: 'No previous decathlon recorded.' }),
   ]));
 
   const grid = el('div', { class: 'card-grid' });
@@ -67,77 +62,49 @@ function renderHome() {
 
 function renderArcade() {
   const screen = mountScreen();
-  screen.appendChild(el('section', { class: 'hero' }, [
-    el('h1', { text: 'Arcade' }),
-    el('p', { text: 'Pick a single event. Your best score per event is saved locally.' }),
-    el('div', { class: 'button-row' }, [
-      button('← Home', { onClick: () => { location.hash = '#/'; }, variant: 'ghost' }),
-    ]),
-  ]));
-
   const grid = el('div', { class: 'card-grid' });
   for (const g of games) {
     const eventBest = getBestForEvent(g.id);
-    const card = el('a', {
+    grid.appendChild(el('a', {
       class: 'card',
       href: `#/event/${g.id}`,
     }, [
       el('h3', { text: g.name }),
       el('p', { text: g.blurb }),
       el('div', { class: 'best', text: eventBest ? `Best: ${eventBest}` : 'Unplayed' }),
-    ]);
-    grid.appendChild(card);
+    ]));
   }
   screen.appendChild(grid);
 }
 
-function renderDecathlonIntro() {
-  const screen = mountScreen();
-  const best = getBestDecathlon();
+function eventHeader(game) {
+  const collapse = el('div', { class: 'rules-collapse' }, [
+    el('div', { class: 'rules', html: game.rulesHtml }),
+  ]);
+  const titleBtn = el('button', {
+    class: 'title-toggle',
+    'aria-expanded': 'false',
+    'aria-controls': `rules-${game.id}`,
+    onClick: () => {
+      const open = collapse.classList.toggle('open');
+      titleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    },
+  }, [
+    el('span', { text: game.name }),
+    el('span', { class: 'chev', 'aria-hidden': 'true' }),
+  ]);
+  collapse.id = `rules-${game.id}`;
 
-  screen.appendChild(el('section', { class: 'hero' }, [
-    el('h1', { text: 'Decathlon' }),
-    el('p', { text: `Play all ${games.length} events in sequence. Each event is a best-of-3 rounds. Your event scores sum to a grand total.` }),
-    el('div', { class: 'button-row' }, [
-      button('Start decathlon', {
-        onClick: () => { location.hash = '#/decathlon/play'; },
-        variant: 'good',
-      }),
-      button('← Home', {
-        onClick: () => { location.hash = '#/'; },
-        variant: 'ghost',
-      }),
-    ]),
-    best
-      ? el('p', { text: `Personal best: ${best.total} pts (${best.date}).` })
-      : el('p', { text: 'No previous decathlon recorded.' }),
-  ]));
-
-  const list = el('ol');
-  for (const g of games) {
-    list.appendChild(el('li', { text: `${g.name} — ${g.blurb}` }));
-  }
-  screen.appendChild(el('div', { class: 'panel' }, [
-    el('h3', { text: 'Events, in order:' }),
-    list,
-  ]));
+  return el('section', { class: 'panel tight' }, [
+    el('div', { class: 'event-head' }, [titleBtn]),
+    collapse,
+  ]);
 }
 
 async function runEvent(game) {
   const screen = mountScreen();
 
-  screen.appendChild(el('section', { class: 'panel' }, [
-    el('div', { class: 'event-head' }, [
-      el('div', {}, [
-        el('h2', { text: game.name }),
-        el('div', { class: 'sub', text: 'Best of 3 rounds' }),
-      ]),
-      el('div', { class: 'button-row' }, [
-        button('← Home', { onClick: () => { location.hash = '#/'; }, variant: 'ghost' }),
-      ]),
-    ]),
-    el('div', { class: 'rules', html: game.rulesHtml }),
-  ]));
+  screen.appendChild(eventHeader(game));
 
   const playArea = el('div', { class: 'panel' });
   screen.appendChild(playArea);
@@ -168,12 +135,11 @@ async function runEvent(game) {
 async function runDecathlon() {
   const screen = mountScreen();
 
-  const header = el('section', { class: 'panel' }, [
+  const titleNode = el('h2', { text: 'Decathlon' });
+  const subNode = el('div', { class: 'sub', text: '' });
+  const header = el('section', { class: 'panel tight' }, [
     el('div', { class: 'event-head' }, [
-      el('div', {}, [
-        el('h2', { text: 'Decathlon in progress' }),
-        el('div', { class: 'sub', text: '' }),
-      ]),
+      el('div', {}, [titleNode, subNode]),
       el('div', { class: 'button-row' }, [
         button('Quit', {
           onClick: () => {
@@ -198,7 +164,7 @@ async function runDecathlon() {
 
   for (let i = 0; i < games.length; i++) {
     const g = games[i];
-    header.querySelector('.sub').textContent = `Event ${i + 1} of ${games.length}: ${g.name}`;
+    subNode.textContent = `Event ${i + 1} of ${games.length}: ${g.name}`;
     clear(progressStrip);
     progressStrip.appendChild(chip('Event', `${i + 1}/${games.length}`));
     progressStrip.appendChild(chip('Total so far', total, { tone: 'accent' }));
@@ -209,7 +175,11 @@ async function runDecathlon() {
     }
 
     clear(playArea);
-    playArea.appendChild(el('div', { class: 'rules', html: g.rulesHtml }));
+    const sub = el('section', { class: 'panel tight' }, [
+      el('div', { class: 'event-head' }, [el('h2', { text: g.name })]),
+      el('div', { class: 'rules', html: g.rulesHtml }),
+    ]);
+    playArea.appendChild(sub);
     const body = el('div');
     playArea.appendChild(body);
 

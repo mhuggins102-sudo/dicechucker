@@ -6,8 +6,10 @@ const POOL = 10;
 const rules = `
   <p>Pool of 10 dice. One die is rolled at a time. After each roll, call <strong>Higher</strong> or <strong>Lower</strong> for the next roll — or <strong>Stop</strong> and bank.</p>
   <p>If the next roll doesn't strictly match your call (a tie counts as wrong), you <strong>bust</strong> and the round scores 0.</p>
-  <p>Stopping scores the total pips of every die rolled. Best of 3 rounds counts.</p>
+  <p>Stopping scores the total pips of every die rolled. Best of 5 rounds counts.</p>
 `;
+
+const ROUNDS = 5;
 
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
@@ -131,11 +133,11 @@ export default {
   name: 'Higher or Lower',
   blurb: 'Predict the next die. Tie busts.',
   rulesHtml: rules,
-  rounds: 3,
+  rounds: ROUNDS,
 
   async play(host) {
-    const outcomes = [null, null, null];
-    const results = [0, 0, 0];
+    const outcomes = Array(ROUNDS).fill(null);
+    const results = Array(ROUNDS).fill(0);
     const head = el('div', { class: 'score-strip' });
     const pills = el('div');
     host.appendChild(head);
@@ -151,10 +153,10 @@ export default {
     };
     const renderPills = (current) => {
       clear(pills);
-      pills.appendChild(roundPills(3, current, outcomes));
+      pills.appendChild(roundPills(ROUNDS, current, outcomes));
     };
 
-    for (let r = 0; r < 3; r++) {
+    for (let r = 0; r < ROUNDS; r++) {
       clear(body);
       renderHead();
       renderPills(r);
