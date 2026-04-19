@@ -227,10 +227,20 @@ kbd {
   margin-top: 2px;
   font-size: 13px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+.event-head .game-name {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 1px;
+  white-space: nowrap;
 }
 .event-head .title-block { min-width: 0; }
+.event-head .chip-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .event-head .chip {
   background: var(--bg-2);
   border-radius: 10px;

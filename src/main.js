@@ -139,9 +139,11 @@ async function runDecathlon() {
 
   const titleNode = el('h2', { text: 'Decathlon' });
   const subNode = el('div', { class: 'sub', text: '' });
+  const gameNameNode = el('div', { class: 'game-name', text: '' });
   const chev = el('span', { class: 'chev', 'aria-hidden': 'true' });
   const chipsChip = chip('Chips', 0, { tone: 'good' });
   const totalChip = chip('Total Score', 0, { tone: 'accent' });
+  const chipStack = el('div', { class: 'chip-stack' }, [totalChip, chipsChip]);
 
   const rulesBody = el('div', { class: 'rules', html: '' });
   const rulesCollapse = el('div', { class: 'rules-collapse', id: 'decathlon-rules' }, [rulesBody]);
@@ -155,15 +157,14 @@ async function runDecathlon() {
       titleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     },
   }, [
-    el('div', { class: 'title-block' }, [titleNode, subNode]),
+    el('div', { class: 'title-block' }, [titleNode, subNode, gameNameNode]),
     chev,
   ]);
 
   const header = el('section', { class: 'panel tight' }, [
     el('div', { class: 'event-head' }, [
       titleBtn,
-      chipsChip,
-      totalChip,
+      chipStack,
       button('Quit', {
         onClick: () => {
           if (confirm('Quit the decathlon? Your run won\'t be saved.')) {
@@ -198,7 +199,8 @@ async function runDecathlon() {
 
   for (let i = 0; i < order.length; i++) {
     const g = order[i];
-    subNode.textContent = `Event ${i + 1} of ${order.length}: ${g.name}`;
+    subNode.textContent = `Event ${i + 1} of ${order.length}`;
+    gameNameNode.textContent = g.name;
     rulesBody.innerHTML = g.rulesHtml;
     rulesCollapse.classList.remove('open');
     titleBtn.setAttribute('aria-expanded', 'false');
@@ -257,6 +259,7 @@ async function runDecathlon() {
   }
 
   subNode.textContent = 'Complete';
+  gameNameNode.textContent = '';
   rulesBody.innerHTML = '';
   setTotal(total);
 
