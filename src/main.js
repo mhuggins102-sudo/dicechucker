@@ -27,6 +27,21 @@ function mountScreen() {
   return screen;
 }
 
+function eventCard(g) {
+  const eventBest = getBestForEvent(g.id);
+  return el('a', {
+    class: 'card',
+    href: `#/event/${g.id}`,
+  }, [
+    el('h3', { text: g.name }),
+    el('p', { text: g.blurb }),
+    el('div', {
+      class: eventBest ? 'best' : 'best unplayed',
+      text: eventBest ? `Best: ${eventBest}` : 'Unplayed',
+    }),
+  ]);
+}
+
 function renderDecathlonHome() {
   const screen = mountScreen();
   const best = getBestDecathlon();
@@ -40,40 +55,32 @@ function renderDecathlonHome() {
         variant: 'good',
       }),
     ]),
-    best
-      ? el('p', { text: `Personal best: ${best.total} pts (${best.date}).` })
-      : el('p', { text: 'No previous decathlon recorded.' }),
+    el('p', {
+      class: 'hero-meta',
+      text: best ? `Personal best: ${best.total} pts (${best.date}).` : 'No previous decathlon recorded.',
+    }),
+  ]));
+
+  screen.appendChild(el('div', { class: 'page-head' }, [
+    el('h2', { text: 'Events' }),
+    el('p', { text: 'Practice any event on its own. Scores here count as solo bests.' }),
   ]));
 
   const grid = el('div', { class: 'card-grid' });
-  for (const g of games) {
-    const eventBest = getBestForEvent(g.id);
-    grid.appendChild(el('a', {
-      class: 'card',
-      href: `#/event/${g.id}`,
-    }, [
-      el('h3', { text: g.name }),
-      el('p', { text: g.blurb }),
-      el('div', { class: 'best', text: eventBest ? `Best: ${eventBest}` : 'Unplayed' }),
-    ]));
-  }
+  for (const g of games) grid.appendChild(eventCard(g));
   screen.appendChild(grid);
 }
 
 function renderArcade() {
   const screen = mountScreen();
+
+  screen.appendChild(el('div', { class: 'page-head' }, [
+    el('h1', { text: 'Arcade' }),
+    el('p', { text: 'Pick any event and play it on its own.' }),
+  ]));
+
   const grid = el('div', { class: 'card-grid' });
-  for (const g of games) {
-    const eventBest = getBestForEvent(g.id);
-    grid.appendChild(el('a', {
-      class: 'card',
-      href: `#/event/${g.id}`,
-    }, [
-      el('h3', { text: g.name }),
-      el('p', { text: g.blurb }),
-      el('div', { class: 'best', text: eventBest ? `Best: ${eventBest}` : 'Unplayed' }),
-    ]));
-  }
+  for (const g of games) grid.appendChild(eventCard(g));
   screen.appendChild(grid);
 }
 
@@ -90,7 +97,7 @@ function eventHeader(game) {
       titleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     },
   }, [
-    el('span', { text: game.name }),
+    el('span', { class: 'event-title', text: game.name }),
     el('span', { class: 'chev', 'aria-hidden': 'true' }),
   ]);
   collapse.id = `rules-${game.id}`;

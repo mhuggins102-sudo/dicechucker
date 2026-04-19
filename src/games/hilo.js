@@ -13,8 +13,8 @@ const rules = `
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
     const tray = el('div', { class: 'dice-tray' });
-    const callRow = el('div', { class: 'call-buttons' });
-    const status = el('div', { class: 'rules', html: 'Roll the first die to start.' });
+    const callRow = el('div', { class: 'button-row' });
+    const status = el('div', { class: 'status', html: 'Roll the first die to start.' });
 
     host.appendChild(tray);
     host.appendChild(status);

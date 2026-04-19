@@ -15,7 +15,7 @@ const rules = `
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
     const tray = el('div', { class: 'dice-tray' });
-    const status = el('div', { class: 'rules', html: 'Pick how many dice to throw — 1, 2, 3, or 4.' });
+    const status = el('div', { class: 'status', html: 'Pick how many dice to throw — 1, 2, 3, or 4.' });
     const controls = el('div', { class: 'button-row' });
 
     host.appendChild(tray);

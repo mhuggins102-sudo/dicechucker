@@ -17,7 +17,7 @@ function hasDuplicate(values) {
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
     const tray = el('div', { class: 'dice-tray' });
-    const status = el('div', { class: 'rules', html: 'Roll stage 1 — 1 die.' });
+    const status = el('div', { class: 'status', html: 'Roll stage 1 — 1 die.' });
     const controls = el('div', { class: 'button-row' });
 
     host.appendChild(tray);
