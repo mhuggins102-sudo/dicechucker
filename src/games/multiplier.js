@@ -1,5 +1,5 @@
 import { rollDie, createDie, animateRoll, applyState } from '../dice.js';
-import { el, clear, button, chip, roundPills, toast, sleep } from '../ui.js';
+import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const POOL = 10;
 const ROUNDS = 3;
@@ -117,9 +117,9 @@ export default {
   rulesHtml: rules,
   rounds: ROUNDS,
 
-  async play(host) {
-    const outcomes = Array(ROUNDS).fill(null);
-    const results = Array(ROUNDS).fill(0);
+  async play(host, hooks) {
+    const outcomes = [];
+    const results = [];
     const head = el('div', { class: 'score-strip' });
     const pills = el('div');
     host.appendChild(head);
@@ -134,22 +134,20 @@ export default {
       head.appendChild(chip('Rolls', `${ctx.rolls ?? 0} / ${POOL}`));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };
-    const renderPills = (current) => {
+    const renderPills = (total, active, oc) => {
       clear(pills);
-      pills.appendChild(roundPills(ROUNDS, current, outcomes));
+      pills.appendChild(roundPills(total, active, oc));
     };
 
-    for (let r = 0; r < ROUNDS; r++) {
-      clear(body);
-      renderHead();
-      renderPills(r);
-      const roundScore = await playRound(body, r, (ctx) => renderHead(ctx));
-      results[r] = roundScore;
-      outcomes[r] = roundScore > 0 ? { done: true, score: roundScore } : { bust: true };
-      renderPills(r);
-      await sleep(400);
-    }
-
-    return Math.max(...results);
+    return runRounds({
+      rounds: ROUNDS,
+      hooks,
+      body,
+      results,
+      outcomes,
+      renderHead,
+      renderPills,
+      playRound,
+    });
   },
 };

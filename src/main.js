@@ -1,6 +1,6 @@
 import { games, gameById } from './games/registry.js';
 import { getBestForEvent, recordEventScore, getBestDecathlon, recordDecathlon } from './storage.js';
-import { el, clear, button, chip } from './ui.js';
+import { el, clear, button, chip, inlinePrompt } from './ui.js';
 
 const stage = document.getElementById('stage');
 
@@ -139,10 +139,12 @@ async function runDecathlon() {
 
   const titleNode = el('h2', { text: 'Decathlon' });
   const subNode = el('div', { class: 'sub', text: '' });
+  const chipsChip = chip('Chips', 0, { tone: 'good' });
   const totalChip = chip('Total Score', 0, { tone: 'accent' });
   const header = el('section', { class: 'panel tight' }, [
     el('div', { class: 'event-head' }, [
       el('div', {}, [titleNode, subNode]),
+      chipsChip,
       totalChip,
       button('Quit', {
         onClick: () => {
@@ -156,27 +158,75 @@ async function runDecathlon() {
   ]);
   screen.appendChild(header);
 
-  const playArea = el('div', { class: 'panel' });
-  screen.appendChild(playArea);
+  // Slot for the per-event header (replaced each iteration).
+  const eventSlot = el('div');
+  screen.appendChild(eventSlot);
+
+  // Slot for the play panel (replaced each iteration).
+  const playSlot = el('div');
+  screen.appendChild(playSlot);
 
   const perEvent = {};
   let total = 0;
+  let chips = 0;
+  const chipClaimedFor = new Set();
 
   function setTotal(value) {
     totalChip.querySelector('.value').textContent = String(value);
   }
+  function setChips(value) {
+    chips = value;
+    chipsChip.querySelector('.value').textContent = String(value);
+  }
 
-  for (let i = 0; i < games.length; i++) {
-    const g = games[i];
-    subNode.textContent = `Event ${i + 1} of ${games.length}: ${g.name}`;
+  // Random event order each run.
+  const order = shuffled(games);
+
+  for (let i = 0; i < order.length; i++) {
+    const g = order[i];
+    subNode.textContent = `Event ${i + 1} of ${order.length}: ${g.name}`;
     setTotal(total);
 
-    clear(playArea);
-    playArea.appendChild(eventHeader(g));
-    const body = el('div');
-    playArea.appendChild(body);
+    clear(eventSlot);
+    eventSlot.appendChild(eventHeader(g));
 
-    const score = await g.play(body);
+    clear(playSlot);
+    const playArea = el('div', { class: 'panel' });
+    playSlot.appendChild(playArea);
+
+    const hooks = {
+      async beforeFinalRound() {
+        if (chipClaimedFor.has(g.id)) return 'play';
+        const choice = await inlinePrompt(
+          playArea,
+          `Last round coming up. Skip it to <strong>bank an Extra Round chip</strong> instead? You can spend it on a future event for a bonus round.<br><span class="muted">Chips on hand: <strong>${chips}</strong>. (One claim per event.)</span>`,
+          [
+            { label: 'Bank chip & skip', value: 'skip', variant: 'good' },
+            { label: 'Play final round', value: 'play', variant: 'ghost' },
+          ],
+        );
+        if (choice === 'skip') {
+          chipClaimedFor.add(g.id);
+          setChips(chips + 1);
+        }
+        return choice;
+      },
+      async afterRoundsExhausted(currentBest) {
+        if (chips === 0) return 'stop';
+        const choice = await inlinePrompt(
+          playArea,
+          `Spend an <strong>Extra Round chip</strong> for another attempt? Current best: <strong>${currentBest}</strong>.<br><span class="muted">Chips on hand: <strong>${chips}</strong>.</span>`,
+          [
+            { label: 'Spend chip', value: 'continue', variant: 'good' },
+            { label: 'Stop', value: 'stop', variant: 'ghost' },
+          ],
+        );
+        if (choice === 'continue') setChips(chips - 1);
+        return choice;
+      },
+    };
+
+    const score = await g.play(playArea, hooks);
     perEvent[g.id] = score;
     total += score;
     setTotal(total);
@@ -188,13 +238,17 @@ async function runDecathlon() {
 
   const { improved } = recordDecathlon(total, perEvent);
 
-  clear(playArea);
+  clear(eventSlot);
+  clear(playSlot);
+  const playArea = el('div', { class: 'panel' });
+  playSlot.appendChild(playArea);
+
   const table = el('table', { class: 'results-table' });
   table.appendChild(el('thead', {}, [
     el('tr', {}, [el('th', { text: 'Event' }), el('th', { text: 'Score' })]),
   ]));
   const tbody = el('tbody');
-  for (const g of games) {
+  for (const g of order) {
     const s = perEvent[g.id];
     tbody.appendChild(el('tr', {}, [
       el('td', { text: g.name }),
@@ -219,4 +273,13 @@ async function runDecathlon() {
       variant: 'ghost',
     }),
   ]));
+}
+
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }

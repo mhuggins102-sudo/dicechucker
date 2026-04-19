@@ -1,5 +1,5 @@
 import { rollDie, createDie, animateRoll, applyState } from '../dice.js';
-import { el, clear, button, chip, roundPills, toast, sleep } from '../ui.js';
+import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const POOL = 10;
 const ROUNDS = 3;
@@ -7,7 +7,7 @@ const ROUNDS = 3;
 const rules = `
   <p>Pool of 10 dice. One die is rolled at a time. After each roll, call <strong>Higher</strong> or <strong>Lower</strong> for the next roll — or <strong>Stop</strong> and bank.</p>
   <p>If the next roll is strictly in the wrong direction, you <strong>bust</strong> and the round scores 0. A <strong>tie</strong> doesn't bust — the die is wasted (no pips added) but still counts against the 10-die pool.</p>
-  <p>Score = <strong>2× the total pips</strong> of every die that counted. Best of 3 rounds counts.</p>
+  <p>Score = <strong>total pips</strong> of every die that counted. Best of 3 rounds counts.</p>
 `;
 
 async function playRound(host, roundIdx, updateHeader) {
@@ -27,7 +27,7 @@ async function playRound(host, roundIdx, updateHeader) {
     let done = false;
     let busy = false;
 
-    const score = () => pips * 2;
+    const score = () => pips;
 
     function renderCallButtons() {
       clear(callRow);
@@ -95,7 +95,7 @@ async function playRound(host, roundIdx, updateHeader) {
         const remaining = POOL - rolls;
         renderStatus(remaining > 0
           ? `Tied <strong>${v}</strong> — die wasted. Still ${remaining} roll${remaining === 1 ? '' : 's'} left. Call against <strong>${reference}</strong> again.`
-          : `Tied on the final die — banking <strong>${score()}</strong>.`);
+          : `Tied on the final die — banking <strong>${score()}</strong> pts.`);
         busy = false;
         renderCallButtons();
         return;
@@ -113,7 +113,7 @@ async function playRound(host, roundIdx, updateHeader) {
       updateHeader({ score: score(), pips, rolls });
       const remaining = POOL - rolls;
       renderStatus(remaining > 0
-        ? `Rolled <strong>${v}</strong>. Pips so far: <strong>${pips}</strong> (×2 = <strong>${score()}</strong>). ${remaining} roll${remaining === 1 ? '' : 's'} left.`
+        ? `Rolled <strong>${v}</strong>. Pips so far: <strong>${pips}</strong>. ${remaining} roll${remaining === 1 ? '' : 's'} left.`
         : `Pool exhausted — stopping with <strong>${score()}</strong>.`);
       busy = false;
       renderCallButtons();
@@ -147,9 +147,9 @@ export default {
   rulesHtml: rules,
   rounds: ROUNDS,
 
-  async play(host) {
-    const outcomes = Array(ROUNDS).fill(null);
-    const results = Array(ROUNDS).fill(0);
+  async play(host, hooks) {
+    const outcomes = [];
+    const results = [];
     const head = el('div', { class: 'score-strip' });
     const pills = el('div');
     host.appendChild(head);
@@ -160,26 +160,23 @@ export default {
     const renderHead = (ctx = {}) => {
       clear(head);
       head.appendChild(chip('Score', ctx.score ?? 0, { tone: ctx.bust ? 'bust' : 'accent' }));
-      head.appendChild(chip('Pips', ctx.pips ?? 0));
       head.appendChild(chip('Rolls', `${ctx.rolls ?? 0} / ${POOL}`));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };
-    const renderPills = (current) => {
+    const renderPills = (total, active, oc) => {
       clear(pills);
-      pills.appendChild(roundPills(ROUNDS, current, outcomes));
+      pills.appendChild(roundPills(total, active, oc));
     };
 
-    for (let r = 0; r < ROUNDS; r++) {
-      clear(body);
-      renderHead();
-      renderPills(r);
-      const score = await playRound(body, r, (ctx) => renderHead(ctx));
-      results[r] = score;
-      outcomes[r] = score > 0 ? { done: true, score } : { bust: true };
-      renderPills(r);
-      await sleep(400);
-    }
-
-    return Math.max(...results);
+    return runRounds({
+      rounds: ROUNDS,
+      hooks,
+      body,
+      results,
+      outcomes,
+      renderHead,
+      renderPills,
+      playRound,
+    });
   },
 };

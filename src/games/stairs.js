@@ -1,5 +1,5 @@
 import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
-import { el, clear, button, chip, roundPills, toast, sleep } from '../ui.js';
+import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const STAGES = [1, 2, 3, 4];
 const ROUNDS = 3;
@@ -140,9 +140,9 @@ export default {
   rulesHtml: rules,
   rounds: ROUNDS,
 
-  async play(host) {
-    const outcomes = Array(ROUNDS).fill(null);
-    const results = Array(ROUNDS).fill(0);
+  async play(host, hooks) {
+    const outcomes = [];
+    const results = [];
     const head = el('div', { class: 'score-strip' });
     const pills = el('div');
     host.appendChild(head);
@@ -156,22 +156,20 @@ export default {
       head.appendChild(chip('Stage', `${ctx.stage ?? 0} / ${STAGES.length}`));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };
-    const renderPills = (current) => {
+    const renderPills = (total, active, oc) => {
       clear(pills);
-      pills.appendChild(roundPills(ROUNDS, current, outcomes));
+      pills.appendChild(roundPills(total, active, oc));
     };
 
-    for (let r = 0; r < ROUNDS; r++) {
-      clear(body);
-      renderHead();
-      renderPills(r);
-      const score = await playRound(body, r, (ctx) => renderHead(ctx));
-      results[r] = score;
-      outcomes[r] = score > 0 ? { done: true, score } : { bust: true };
-      renderPills(r);
-      await sleep(400);
-    }
-
-    return Math.max(...results);
+    return runRounds({
+      rounds: ROUNDS,
+      hooks,
+      body,
+      results,
+      outcomes,
+      renderHead,
+      renderPills,
+      playRound,
+    });
   },
 };

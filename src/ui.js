@@ -77,3 +77,76 @@ export function toast(message, { tone = '', duration = 1800 } = {}) {
 export function sleep(ms) {
   return new Promise((res) => setTimeout(res, ms));
 }
+
+/**
+ * Inline prompt rendered into a host container. Resolves with the chosen value.
+ * `choices` = [{ label, value, variant? }]
+ */
+export function inlinePrompt(host, html, choices) {
+  return new Promise((resolve) => {
+    const wrap = el('section', { class: 'inline-prompt' }, [
+      el('div', { class: 'prompt-msg', html }),
+      el('div', { class: 'button-row' },
+        choices.map(c => button(c.label, {
+          variant: c.variant,
+          onClick: () => { wrap.remove(); resolve(c.value); },
+        })),
+      ),
+    ]);
+    host.appendChild(wrap);
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+}
+
+/**
+ * Drive a best-of-N game with optional Decathlon chip hooks.
+ *  - hooks.beforeFinalRound() => 'play' | 'skip'
+ *  - hooks.afterRoundsExhausted(currentBest) => 'continue' | 'stop'
+ * The caller owns the results/outcomes arrays so its renderHead() and
+ * renderPills() can read them via closure.
+ */
+export async function runRounds({
+  rounds,
+  hooks,
+  body,
+  results,
+  outcomes,
+  renderHead,
+  renderPills, // (totalPlanned, active, outcomes) => void
+  playRound,   // (body, roundIdx, updateHead) => Promise<score>
+}) {
+  let plannedRounds = rounds;
+
+  const playOne = async (r) => {
+    clear(body);
+    renderHead();
+    renderPills(plannedRounds, r, outcomes);
+    const score = await playRound(body, r, (ctx) => renderHead(ctx));
+    results.push(score);
+    outcomes.push(score > 0 ? { done: true, score } : { bust: true });
+    renderPills(plannedRounds, -1, outcomes);
+    await sleep(400);
+  };
+
+  for (let r = 0; r < rounds; r++) {
+    if (r === rounds - 1 && hooks?.beforeFinalRound) {
+      const choice = await hooks.beforeFinalRound();
+      if (choice === 'skip') {
+        plannedRounds = outcomes.length;
+        renderPills(plannedRounds, -1, outcomes);
+        break;
+      }
+    }
+    await playOne(r);
+  }
+
+  while (hooks?.afterRoundsExhausted) {
+    const best = Math.max(0, ...results);
+    const choice = await hooks.afterRoundsExhausted(best);
+    if (choice !== 'continue') break;
+    plannedRounds += 1;
+    await playOne(outcomes.length);
+  }
+
+  return Math.max(0, ...results);
+}
