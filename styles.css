@@ -222,7 +222,15 @@ kbd {
 }
 .event-head > * { min-width: 0; }
 .event-head h2 { margin: 0; font-size: 22px; }
-.event-head .sub { color: var(--ink-dim); margin-top: 2px; font-size: 13px; }
+.event-head .sub {
+  color: var(--ink-dim);
+  margin-top: 2px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.event-head .title-block { min-width: 0; }
 .event-head .chip {
   background: var(--bg-2);
   border-radius: 10px;
@@ -230,7 +238,7 @@ kbd {
   border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   line-height: 1.05;
 }
 .event-head .chip .label {
@@ -265,6 +273,8 @@ kbd {
   margin: -4px -8px;
   border-radius: 8px;
   cursor: pointer;
+  text-align: left;
+  min-width: 0;
 }
 .title-toggle:hover { background: rgba(255, 255, 255, 0.05); }
 .title-toggle .chev {

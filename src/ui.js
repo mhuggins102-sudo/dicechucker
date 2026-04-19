@@ -130,7 +130,8 @@ export async function runRounds({
 
   for (let r = 0; r < rounds; r++) {
     if (r === rounds - 1 && hooks?.beforeFinalRound) {
-      const choice = await hooks.beforeFinalRound();
+      const currentBest = Math.max(0, ...results);
+      const choice = await hooks.beforeFinalRound(currentBest);
       if (choice === 'skip') {
         plannedRounds = outcomes.length;
         renderPills(plannedRounds, -1, outcomes);

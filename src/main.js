@@ -139,11 +139,29 @@ async function runDecathlon() {
 
   const titleNode = el('h2', { text: 'Decathlon' });
   const subNode = el('div', { class: 'sub', text: '' });
+  const chev = el('span', { class: 'chev', 'aria-hidden': 'true' });
   const chipsChip = chip('Chips', 0, { tone: 'good' });
   const totalChip = chip('Total Score', 0, { tone: 'accent' });
+
+  const rulesBody = el('div', { class: 'rules', html: '' });
+  const rulesCollapse = el('div', { class: 'rules-collapse', id: 'decathlon-rules' }, [rulesBody]);
+
+  const titleBtn = el('button', {
+    class: 'title-toggle',
+    'aria-expanded': 'false',
+    'aria-controls': 'decathlon-rules',
+    onClick: () => {
+      const open = rulesCollapse.classList.toggle('open');
+      titleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    },
+  }, [
+    el('div', { class: 'title-block' }, [titleNode, subNode]),
+    chev,
+  ]);
+
   const header = el('section', { class: 'panel tight' }, [
     el('div', { class: 'event-head' }, [
-      el('div', {}, [titleNode, subNode]),
+      titleBtn,
       chipsChip,
       totalChip,
       button('Quit', {
@@ -155,12 +173,9 @@ async function runDecathlon() {
         variant: 'ghost',
       }),
     ]),
+    rulesCollapse,
   ]);
   screen.appendChild(header);
-
-  // Slot for the per-event header (replaced each iteration).
-  const eventSlot = el('div');
-  screen.appendChild(eventSlot);
 
   // Slot for the play panel (replaced each iteration).
   const playSlot = el('div');
@@ -169,7 +184,6 @@ async function runDecathlon() {
   const perEvent = {};
   let total = 0;
   let chips = 0;
-  const chipClaimedFor = new Set();
 
   function setTotal(value) {
     totalChip.querySelector('.value').textContent = String(value);
@@ -185,33 +199,42 @@ async function runDecathlon() {
   for (let i = 0; i < order.length; i++) {
     const g = order[i];
     subNode.textContent = `Event ${i + 1} of ${order.length}: ${g.name}`;
+    rulesBody.innerHTML = g.rulesHtml;
+    rulesCollapse.classList.remove('open');
+    titleBtn.setAttribute('aria-expanded', 'false');
     setTotal(total);
-
-    clear(eventSlot);
-    eventSlot.appendChild(eventHeader(g));
 
     clear(playSlot);
     const playArea = el('div', { class: 'panel' });
     playSlot.appendChild(playArea);
 
+    const isLastEvent = i === order.length - 1;
+    let bankedThisEvent = false;
+
     const hooks = {
-      async beforeFinalRound() {
-        if (chipClaimedFor.has(g.id)) return 'play';
+      async beforeFinalRound(currentBest) {
+        // Don't offer to bank when there's nothing to lock in,
+        // and don't offer on the final event (chip can't be spent).
+        if (currentBest === 0) return 'play';
+        if (isLastEvent) return 'play';
         const choice = await inlinePrompt(
           playArea,
-          `Last round coming up. Skip it to <strong>bank an Extra Round chip</strong> instead? You can spend it on a future event for a bonus round.<br><span class="muted">Chips on hand: <strong>${chips}</strong>. (One claim per event.)</span>`,
+          `Last round coming up. Skip it to <strong>bank an Extra Round chip</strong> instead? Current best: <strong>${currentBest}</strong>. You can spend it on a future event for a bonus round.<br><span class="muted">Chips on hand: <strong>${chips}</strong>.</span>`,
           [
             { label: 'Bank chip & skip', value: 'skip', variant: 'good' },
             { label: 'Play final round', value: 'play', variant: 'ghost' },
           ],
         );
         if (choice === 'skip') {
-          chipClaimedFor.add(g.id);
           setChips(chips + 1);
+          bankedThisEvent = true;
         }
         return choice;
       },
       async afterRoundsExhausted(currentBest) {
+        // If the player just banked a chip for this event, don't turn
+        // around and ask them to spend one on the same event.
+        if (bankedThisEvent) return 'stop';
         if (chips === 0) return 'stop';
         const choice = await inlinePrompt(
           playArea,
@@ -234,11 +257,11 @@ async function runDecathlon() {
   }
 
   subNode.textContent = 'Complete';
+  rulesBody.innerHTML = '';
   setTotal(total);
 
   const { improved } = recordDecathlon(total, perEvent);
 
-  clear(eventSlot);
   clear(playSlot);
   const playArea = el('div', { class: 'panel' });
   playSlot.appendChild(playArea);
