@@ -50,7 +50,7 @@ async function playRound(host, roundIdx, updateHeader) {
     const tray = el('div', { class: 'dice-tray' });
     const pairListWrap = el('div');
     const controls = el('div', { class: 'button-row' });
-    const subInfo = el('div', { class: 'rules', html: '<strong>Stage a pair</strong> by clicking two dice, then Freeze pair to lock them in.' });
+    const subInfo = el('div', { class: 'status', html: '<strong>Stage a pair</strong> by clicking two dice, then Freeze pair to lock them in.' });
 
     host.appendChild(tray);
     host.appendChild(pairListWrap);
