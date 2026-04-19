@@ -236,11 +236,6 @@ kbd {
   white-space: nowrap;
 }
 .event-head .title-block { min-width: 0; }
-.event-head .chip-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 .event-head .chip {
   background: var(--bg-2);
   border-radius: 10px;

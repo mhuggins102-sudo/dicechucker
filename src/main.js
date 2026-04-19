@@ -143,7 +143,6 @@ async function runDecathlon() {
   const chev = el('span', { class: 'chev', 'aria-hidden': 'true' });
   const chipsChip = chip('Chips', 0, { tone: 'good' });
   const totalChip = chip('Total Score', 0, { tone: 'accent' });
-  const chipStack = el('div', { class: 'chip-stack' }, [totalChip, chipsChip]);
 
   const rulesBody = el('div', { class: 'rules', html: '' });
   const rulesCollapse = el('div', { class: 'rules-collapse', id: 'decathlon-rules' }, [rulesBody]);
@@ -164,15 +163,8 @@ async function runDecathlon() {
   const header = el('section', { class: 'panel tight' }, [
     el('div', { class: 'event-head' }, [
       titleBtn,
-      chipStack,
-      button('Quit', {
-        onClick: () => {
-          if (confirm('Quit the decathlon? Your run won\'t be saved.')) {
-            location.hash = '#/';
-          }
-        },
-        variant: 'ghost',
-      }),
+      totalChip,
+      chipsChip,
     ]),
     rulesCollapse,
   ]);
@@ -238,6 +230,12 @@ async function runDecathlon() {
         // around and ask them to spend one on the same event.
         if (bankedThisEvent) return 'stop';
         if (chips === 0) return 'stop';
+        // On the final event, chips have nowhere to go after this game,
+        // so auto-spend them silently for bonus rounds.
+        if (isLastEvent) {
+          setChips(chips - 1);
+          return 'continue';
+        }
         const choice = await inlinePrompt(
           playArea,
           `Spend an <strong>Extra Round chip</strong> for another attempt? Current best: <strong>${currentBest}</strong>.<br><span class="muted">Chips on hand: <strong>${chips}</strong>.</span>`,
@@ -258,13 +256,10 @@ async function runDecathlon() {
     recordEventScore(g.id, score);
   }
 
-  subNode.textContent = 'Complete';
-  gameNameNode.textContent = '';
-  rulesBody.innerHTML = '';
-  setTotal(total);
-
   const { improved } = recordDecathlon(total, perEvent);
 
+  // Final results screen — drop the running header entirely.
+  header.remove();
   clear(playSlot);
   const playArea = el('div', { class: 'panel' });
   playSlot.appendChild(playArea);
