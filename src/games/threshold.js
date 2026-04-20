@@ -10,19 +10,19 @@ const ROUNDS = 3;
 
 const rules = `
   <p>Pick a target <strong>y</strong> between ${Y_MIN} and ${Y_MAX}. You get <strong>3 rolls</strong> to hit a single-roll total ≥ y. Each roll you choose how many dice to throw (1–${MAX_DICE}).</p>
-  <p>Rolling any <strong>1 busts</strong>. Each <strong>6</strong> is a multiplier: +1 per 6, applied to that roll's non-6 pips. <em>e.g.</em> 5, 2, 6, 6 → (5 + 2) × 3 = 21.</p>
-  <p>Succeed → <strong>stop</strong> and bank y, or raise to a higher target for a fresh 3 rolls. Up to <strong>${MAX_PHASES} targets</strong> per round; failing on any target busts to 0. Best of 3 rounds counts.</p>
+  <p>Rolling any <strong>1 wastes that roll</strong> (no sum counted) — but your remaining rolls still stand. Each <strong>6</strong> is a multiplier: +1 per 6, applied to that roll's non-6 pips. <em>e.g.</em> 5, 2, 6, 6 → (5 + 2) × 3 = 21.</p>
+  <p>Succeed → <strong>stop</strong> and bank y, or raise to a higher target for a fresh 3 rolls. Up to <strong>${MAX_PHASES} targets</strong> per round; failing a target (3 rolls without hitting) busts to 0. Best of 3 rounds counts.</p>
 `;
 
 function rollResult(values) {
-  if (values.includes(1)) return { bust: true };
+  if (values.includes(1)) return { wasted: true };
   let base = 0, sixes = 0;
   for (const v of values) {
     if (v === 6) sixes++;
     else base += v;
   }
   const mult = 1 + sixes;
-  return { bust: false, base, mult, sixes, total: base * mult };
+  return { wasted: false, base, mult, sixes, total: base * mult };
 }
 
 function yStepper(host, { min, max, initial, promptHtml, confirmLabel, onConfirm }) {
@@ -153,9 +153,19 @@ async function playRound(host, roundIdx, updateHeader) {
 
       const r = rollResult(values);
 
-      if (r.bust) {
-        dieEls.forEach((d, i) => { if (values[i] === 1) applyState(d, { bust: true }); });
-        bustRound('rolled a 1');
+      if (r.wasted) {
+        dieEls.forEach((d, i) => {
+          if (values[i] === 1) applyState(d, { bust: true });
+          else applyState(d, { dim: true });
+        });
+        if (rollsLeft() <= 0) {
+          status.innerHTML = `Rolled a <strong>1</strong> — roll wasted. No rolls left to reach <strong>${y}</strong>.`;
+          bustRound(`couldn't reach ${y}`);
+          return;
+        }
+        status.innerHTML = `Rolled a <strong>1</strong> — roll wasted. ${rollsLeft()} roll${rollsLeft() === 1 ? '' : 's'} left to reach <strong>${y}</strong>.`;
+        busy = false;
+        renderDiceChooser();
         return;
       }
 
