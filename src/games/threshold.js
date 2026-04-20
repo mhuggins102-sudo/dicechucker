@@ -1,17 +1,16 @@
 import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
-import { el, clear, button, chip, roundPills, toast, runRounds } from '../ui.js';
+import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const MAX_DICE = 8;
 const MAX_ATTEMPTS = 3;
-const MAX_PHASES = 3;
 const Y_MIN = 10;
 const Y_MAX = 50;
-const ROUNDS = 3;
+const ROUNDS = 5;
 
 const rules = `
   <p>Pick a target <strong>y</strong> between ${Y_MIN} and ${Y_MAX}. You get <strong>3 rolls</strong> to hit a single-roll total ≥ y. Each roll you choose how many dice to throw (1–${MAX_DICE}).</p>
   <p>Rolling any <strong>1 wastes that roll</strong> (no sum counted) — but your remaining rolls still stand. Each <strong>6</strong> is a multiplier: +1 per 6, applied to that roll's non-6 pips. <em>e.g.</em> 5, 2, 6, 6 → (5 + 2) × 3 = 21.</p>
-  <p>Succeed → <strong>stop</strong> and bank y, or raise to a higher target for a fresh 3 rolls. Up to <strong>${MAX_PHASES} targets</strong> per round; failing a target (3 rolls without hitting) busts to 0. Best of 3 rounds counts.</p>
+  <p>Hit y → round scores <strong>y</strong>. Miss all 3 rolls → round scores 0. On each following round, y must be <strong>higher than the highest y you've already achieved</strong>. ${ROUNDS} rounds; best round counts.</p>
 `;
 
 function rollResult(values) {
@@ -79,47 +78,41 @@ function yStepper(host, { min, max, initial, promptHtml, confirmLabel, onConfirm
   wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function playRound(host, roundIdx, updateHeader) {
+function playSingleRound(host, roundIdx, updateHeader, minY) {
   return new Promise((resolve) => {
     const tray = el('div', { class: 'dice-tray' });
-    const status = el('div', { class: 'status', html: `Pick your starting target (${Y_MIN}–${Y_MAX}).` });
+    const status = el('div', { class: 'status', html: `Pick your target (${minY}–${Y_MAX}).` });
     const controls = el('div');
 
     host.appendChild(tray);
     host.appendChild(status);
     host.appendChild(controls);
 
-    let y = Y_MIN;
-    let locked = 0;
-    let phaseIdx = 0;
+    let y = minY;
     let attempts = 0;
     let done = false;
     let busy = false;
 
     const rollsLeft = () => MAX_ATTEMPTS - attempts;
-    const emitHead = (extra = {}) => updateHeader({
-      y, locked, rolls: rollsLeft(), phase: phaseIdx + 1, ...extra,
-    });
+    const emitHead = (extra = {}) => updateHeader({ y, rolls: rollsLeft(), ...extra });
 
-    function askForY(initial, min) {
-      const promptHtml = phaseIdx === 0
-        ? `<strong>Pick starting target</strong>. 3 rolls to hit it.`
-        : `<strong>Raise target</strong> — must be greater than <strong>${y}</strong>. Target #${phaseIdx + 1} of ${MAX_PHASES}.`;
-      yStepper(host, {
-        min,
-        max: Y_MAX,
-        initial,
-        promptHtml,
-        confirmLabel: phaseIdx === 0 ? 'Start attempt' : 'Raise & start',
-        onConfirm: (v) => {
-          y = v;
-          attempts = 0;
-          emitHead();
-          status.innerHTML = `Target <strong>${y}</strong>. Choose how many dice to throw.`;
-          renderDiceChooser();
-        },
-      });
-    }
+    const promptHtml = minY > Y_MIN
+      ? `<strong>Pick this round's target</strong>. Must be higher than <strong>${minY - 1}</strong> (your previous best).`
+      : `<strong>Pick this round's target</strong>. 3 rolls to hit it.`;
+
+    yStepper(host, {
+      min: minY,
+      max: Y_MAX,
+      initial: minY,
+      promptHtml,
+      confirmLabel: 'Lock target',
+      onConfirm: (v) => {
+        y = v;
+        emitHead();
+        status.innerHTML = `Target <strong>${y}</strong>. Choose how many dice to throw.`;
+        renderDiceChooser();
+      },
+    });
 
     function renderDiceChooser() {
       clear(controls);
@@ -180,7 +173,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
       if (r.total >= y) {
         status.innerHTML = `Rolled ${breakdown} — <strong>hit ${y}</strong>.`;
-        onSuccess();
+        finish(y);
         return;
       }
 
@@ -195,69 +188,32 @@ async function playRound(host, roundIdx, updateHeader) {
       renderDiceChooser();
     }
 
-    function onSuccess() {
-      locked = y;
-      emitHead();
-      const lastPhase = phaseIdx >= MAX_PHASES - 1;
-      const atCeiling = y >= Y_MAX;
-      if (lastPhase || atCeiling) {
-        status.innerHTML = `Locked <strong>${locked}</strong>${atCeiling ? ' (ceiling)' : ''} — banking.`;
-        setTimeout(() => finish(locked), 700);
-        return;
-      }
-      const prompt = el('section', { class: 'inline-prompt' }, [
-        el('div', { class: 'prompt-msg', html:
-          `Locked <strong>${locked}</strong>. Stop and bank, or raise for another 3 rolls?` +
-          `<span class="muted">Raising risks it — failing the new target busts to 0. Targets used: <strong>${phaseIdx + 1} / ${MAX_PHASES}</strong>.</span>` }),
-        el('div', { class: 'button-row' }, [
-          button(`Stop & bank ${locked}`, {
-            variant: 'good',
-            onClick: () => { prompt.remove(); finish(locked); },
-          }),
-          button('Raise target', {
-            variant: 'ghost',
-            onClick: () => {
-              prompt.remove();
-              phaseIdx += 1;
-              clear(tray);
-              const nextMin = Math.min(y + 1, Y_MAX);
-              askForY(Math.min(y + 5, Y_MAX), nextMin);
-            },
-          }),
-        ]),
-      ]);
-      host.appendChild(prompt);
-      prompt.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      busy = false;
-    }
-
     function bustRound(reason) {
       done = true;
       clear(controls);
-      toast(`Bust — ${reason}`, { tone: 'bad', duration: 2200 });
-      emitHead({ locked: 0, bust: true });
+      toast(`Round ${roundIdx + 1}: 0 pts`, { tone: 'bad', duration: 2000 });
+      emitHead({ bust: true });
       status.innerHTML = `Round busted — ${reason}.`;
-      setTimeout(() => resolve(0), 1500);
+      setTimeout(() => resolve(0), 1400);
     }
 
     function finish(score) {
       done = true;
       clear(controls);
-      toast(`Round ${roundIdx + 1}: ${score} pts`, { tone: score > 0 ? 'good' : 'bad' });
-      emitHead({ locked: score, done: true });
+      toast(`Round ${roundIdx + 1}: ${score} pts`, { tone: 'good' });
+      emitHead({ done: true });
       status.innerHTML = `Banked <strong>${score}</strong>.`;
       setTimeout(() => resolve(score), 900);
     }
 
     emitHead();
-    askForY(Y_MIN, Y_MIN);
   });
 }
 
 export default {
   id: 'threshold',
   name: 'Threshold',
-  blurb: 'Pick a target, beat it in 3 rolls, raise or bank.',
+  blurb: 'Beat your target in 3 rolls — each round must climb higher.',
   rulesHtml: rules,
   rounds: ROUNDS,
 
@@ -273,14 +229,29 @@ export default {
 
     const renderHead = (ctx = {}) => {
       clear(head);
-      head.appendChild(chip('Target', ctx.y ?? Y_MIN, { tone: 'accent' }));
-      head.appendChild(chip('Locked', ctx.locked ?? 0, { tone: ctx.bust ? 'bust' : 'good' }));
+      head.appendChild(chip('Target', ctx.y ?? '—', { tone: 'accent' }));
       head.appendChild(chip('Rolls left', ctx.rolls ?? MAX_ATTEMPTS));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };
     const renderPills = (total, active, oc) => {
       clear(pills);
       pills.appendChild(roundPills(total, active, oc));
+    };
+
+    const playRound = async (roundHost, roundIdx, updateHeader) => {
+      const maxAchieved = Math.max(0, ...results);
+      const minY = Math.max(Y_MIN, maxAchieved + 1);
+
+      if (minY > Y_MAX) {
+        roundHost.appendChild(el('div', {
+          class: 'status',
+          html: `Already hit the <strong>${Y_MAX}</strong> ceiling — no target available.`,
+        }));
+        await sleep(1200);
+        return 0;
+      }
+
+      return playSingleRound(roundHost, roundIdx, updateHeader, minY);
     };
 
     return runRounds({
