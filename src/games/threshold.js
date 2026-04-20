@@ -133,14 +133,33 @@ function playSingleRound(host, roundIdx, updateHeader, minY) {
       if (busy || done) return;
       busy = true;
       clear(controls);
+      clear(tray);
 
       const values = rollMany(n);
-      const dieEls = values.map(v => createDie(v, { selectable: false }));
-
-      if (attempts > 0) tray.appendChild(el('div', { class: 'stage-divider' }));
+      const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
       for (const d of dieEls) tray.appendChild(d);
 
-      await animateRollSequence(dieEls, values);
+      status.innerHTML = `Rolling ${n} die${n === 1 ? '' : 's'} — need <strong>${y}</strong>.`;
+
+      await animateRollSequence(dieEls, values, {
+        onReveal: (_i, _v, shown) => {
+          const remaining = n - shown.length;
+          const tail = remaining > 0 ? ` (${remaining} to go)` : '';
+          if (shown.includes(1)) {
+            status.innerHTML = `A <strong>1</strong> showed up — this roll will be wasted${tail}.`;
+            return;
+          }
+          let base = 0, sixes = 0;
+          for (const v of shown) {
+            if (v === 6) sixes++;
+            else base += v;
+          }
+          const mult = 1 + sixes;
+          const total = base * mult;
+          const display = mult > 1 ? `${base} × ${mult} = <strong>${total}</strong>` : `<strong>${total}</strong>`;
+          status.innerHTML = `So far: ${display} — need <strong>${y}</strong>${tail}.`;
+        },
+      });
 
       attempts += 1;
       emitHead();
