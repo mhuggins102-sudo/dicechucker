@@ -11,6 +11,7 @@
   --ink-muted: #7b80a8;
   --accent: #ffd166;
   --accent-2: #ef476f;
+  --accent-3: #a78bfa;
   --good: #06d6a0;
   --bad: #ef476f;
   --die-face: #fafbff;
@@ -300,6 +301,7 @@ kbd {
 .btn.ghost:hover { background: rgba(255, 255, 255, 0.05); }
 .btn.danger { background: var(--accent-2); color: #fff; }
 .btn.good { background: var(--good); color: #06282a; }
+.btn.reroll { background: var(--accent-3); color: #1a1033; }
 
 .btn.sm {
   min-height: 30px;

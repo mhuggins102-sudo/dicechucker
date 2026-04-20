@@ -116,11 +116,11 @@ async function playRound(host, roundIdx, updateHeader) {
         onClick: onRerollClick,
         disabled: !canProceed || unfrozenCount < 2,
         title: unfrozenCount < 2 ? 'Need at least 2 unfrozen dice' : '',
+        variant: 'reroll',
       }));
       controls.appendChild(button('Stop & Bank', {
         onClick: onStopClick,
         disabled: !canProceed || state.pairs.length === 0,
-        variant: 'ghost',
       }));
     }
 
