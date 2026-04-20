@@ -91,15 +91,19 @@ async function playRound(host, roundIdx, updateHeader) {
       busy = true;
       clear(controls);
       clear(rollTray);
-      status.innerHTML = 'Rolling…';
+      status.innerHTML = 'Rolling the pair…';
 
       const values = rollMany(2);
-      const dieEls = values.map(v => {
-        const d = createDie(v, { selectable: false });
+      const dieEls = values.map(() => {
+        const d = createDie(1, { placeholder: true, selectable: false });
         rollTray.appendChild(d);
         return d;
       });
-      await animateRollSequence(dieEls, values);
+      await animateRollSequence(dieEls, values, {
+        onReveal: (i, v) => {
+          if (i === 0) status.innerHTML = `First die: <strong>${v}</strong>. Waiting on the second…`;
+        },
+      });
 
       attemptsUsed += 1;
       emit();
@@ -108,7 +112,7 @@ async function playRound(host, roundIdx, updateHeader) {
         applyState(d, { selectable: true });
         d.addEventListener('click', () => onKeep(i, values, dieEls));
       });
-      status.innerHTML = `Rolled <strong>${values[0]}</strong> and <strong>${values[1]}</strong>. Click one to keep.`;
+      status.innerHTML = `Rolled <strong>${values[0]}</strong> and <strong>${values[1]}</strong>. Click the one you want to keep.`;
       busy = false;
     }
 

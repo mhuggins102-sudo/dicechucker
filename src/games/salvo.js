@@ -59,18 +59,27 @@ async function playRound(host, roundIdx, updateHeader) {
       clear(controls);
 
       const values = rollMany(n);
-      const dieEls = values.map(v => {
-        const d = createDie(v);
-        applyState(d, { selectable: false });
-        return d;
-      });
+      const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
 
       if (rollsUsed > 0) {
         tray.appendChild(el('div', { class: 'stage-divider' }));
       }
       for (const d of dieEls) tray.appendChild(d);
 
-      await animateRollSequence(dieEls, values);
+      status.innerHTML = `Throwing ${n} die${n === 1 ? '' : 's'}…`;
+
+      await animateRollSequence(dieEls, values, {
+        onReveal: (_i, _v, shown) => {
+          const remaining = n - shown.length;
+          const tail = remaining > 0 ? ` (${remaining} to go)` : '';
+          if (shown.includes(1)) {
+            status.innerHTML = `A <strong>1</strong> appeared — round will bust${tail}.`;
+            return;
+          }
+          const partial = shown.reduce((a, b) => a + b, 0);
+          status.innerHTML = `This throw so far: <strong>+${partial}</strong> (total would be ${total + partial})${tail}.`;
+        },
+      });
 
       rollsUsed += 1;
       diceUsed += n;

@@ -58,11 +58,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
       const count = STAGES[stageIdx];
       const values = rollMany(count);
-      const dieEls = values.map(v => {
-        const d = createDie(v);
-        applyState(d, { selectable: false });
-        return d;
-      });
+      const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
 
       // Add a divider before non-first stages.
       if (stageIdx > 0) {
@@ -70,7 +66,21 @@ async function playRound(host, roundIdx, updateHeader) {
       }
       for (const d of dieEls) tray.appendChild(d);
 
-      await animateRollSequence(dieEls, values);
+      status.innerHTML = `Rolling stage ${stageIdx + 1} — ${count} die${count === 1 ? '' : 's'}.`;
+
+      await animateRollSequence(dieEls, values, {
+        onReveal: (_i, _v, shown) => {
+          const remaining = count - shown.length;
+          const tail = remaining > 0 ? ` (${remaining} to go)` : '';
+          const dup = hasDuplicate(shown);
+          if (dup) {
+            status.innerHTML = `Duplicate rolled — stage ${stageIdx + 1} will bust${tail}.`;
+            return;
+          }
+          const partial = shown.reduce((a, b) => a + b, 0);
+          status.innerHTML = `Stage ${stageIdx + 1}: <strong>+${partial}</strong> so far (total would be ${total + partial})${tail}.`;
+        },
+      });
 
       const sum = values.reduce((a, b) => a + b, 0);
       const bust = hasDuplicate(values);

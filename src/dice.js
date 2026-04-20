@@ -16,16 +16,18 @@ export function createDie(value, options = {}) {
 export function setDie(el, value, options = {}) {
   el.dataset.value = String(value);
   el.innerHTML = '';
-  for (let i = 0; i < value; i++) {
-    const pip = document.createElement('span');
-    pip.className = 'pip';
-    el.appendChild(pip);
+  if (!options.placeholder) {
+    for (let i = 0; i < value; i++) {
+      const pip = document.createElement('span');
+      pip.className = 'pip';
+      el.appendChild(pip);
+    }
   }
   applyState(el, options);
 }
 
 export function applyState(el, state = {}) {
-  for (const key of ['frozen', 'bust', 'staged', 'dim', 'highlight']) {
+  for (const key of ['frozen', 'bust', 'staged', 'dim', 'highlight', 'placeholder']) {
     if (state[key]) el.dataset[key] = 'true';
     else delete el.dataset[key];
   }
@@ -56,9 +58,14 @@ export function animateRoll(el, finalValue, { duration = 450 } = {}) {
   });
 }
 
-export async function animateRollSequence(dieEls, values, options) {
+export async function animateRollSequence(dieEls, values, options = {}) {
+  const { onReveal, ...rollOpts } = options;
   for (let i = 0; i < dieEls.length; i++) {
-    await animateRoll(dieEls[i], values[i], options);
+    const el = dieEls[i];
+    // Drop placeholder so the tumbling animation renders real pips.
+    delete el.dataset.placeholder;
+    await animateRoll(el, values[i], rollOpts);
+    if (onReveal) onReveal(i, values[i], values.slice(0, i + 1));
   }
 }
 

@@ -18,7 +18,7 @@ function triangular(n) {
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
     const tray = el('div', { class: 'dice-tray' });
-    const status = el('div', { class: 'status', html: 'Roll your first die to set the starting sum.' });
+    const status = el('div', { class: 'status', html: 'Roll 1 die to set your starting sum.' });
     const controls = el('div');
 
     host.appendChild(tray);
@@ -65,7 +65,7 @@ async function playRound(host, roundIdx, updateHeader) {
       const minNext = lastCount + 1;
       controls.appendChild(el('div', {
         class: 'chooser-label',
-        text: `Turn ${turnsCleared + 1}: pick ${minNext}–${POOL} dice (must beat ${lastSum})`,
+        text: `Turn ${turnsCleared + 1}: pick ${minNext}–${POOL} dice to beat ${lastSum}`,
       }));
       const chooser = el('div', { class: 'ascent-chooser' });
       for (let n = minNext; n <= POOL; n++) {
@@ -75,7 +75,7 @@ async function playRound(host, roundIdx, updateHeader) {
         }));
       }
       chooser.appendChild(button('Stop & Bank', {
-        variant: 'ghost stop-bank',
+        variant: 'stop-bank',
         onClick: finish,
       }));
       controls.appendChild(chooser);
@@ -85,15 +85,31 @@ async function playRound(host, roundIdx, updateHeader) {
       if (busy || done) return;
       busy = true;
       clear(controls);
+      clear(tray);
 
       const values = rollMany(n);
-      const dieEls = values.map(v => createDie(v, { selectable: false }));
-
-      if (turnsCleared > 0) tray.appendChild(el('div', { class: 'stage-divider' }));
+      const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
       for (const d of dieEls) tray.appendChild(d);
 
-      status.innerHTML = 'Rolling…';
-      await animateRollSequence(dieEls, values);
+      if (turnsCleared === 0) {
+        status.innerHTML = 'Rolling your starting die…';
+      } else {
+        status.innerHTML = `Rolling ${n} dice — need to beat <strong>${lastSum}</strong>.`;
+      }
+
+      await animateRollSequence(dieEls, values, {
+        onReveal: (_i, _v, shown) => {
+          const running = shown.reduce((a, b) => a + b, 0);
+          if (turnsCleared === 0) {
+            status.innerHTML = `Rolling your starting die… <strong>${running}</strong>.`;
+          } else {
+            const need = lastSum;
+            const remaining = n - shown.length;
+            const tail = remaining > 0 ? ` (${remaining} die${remaining === 1 ? '' : 's'} to go)` : '';
+            status.innerHTML = `So far: <strong>${running}</strong> — need > <strong>${need}</strong>${tail}.`;
+          }
+        },
+      });
 
       const sum = values.reduce((a, b) => a + b, 0);
 
@@ -103,7 +119,7 @@ async function playRound(host, roundIdx, updateHeader) {
         lastCount = n;
         dieEls.forEach(d => applyState(d, { highlight: true }));
         emit();
-        status.innerHTML = `Starting sum: <strong>${sum}</strong>. Bank 1 pt, or roll more dice for a higher sum.`;
+        status.innerHTML = `Starting sum: <strong>${sum}</strong>. Bank for 1 pt, or roll more dice for a higher sum.`;
         busy = false;
         renderControls();
         return;
@@ -111,7 +127,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
       if (sum < lastSum) {
         dieEls.forEach(d => applyState(d, { bust: true }));
-        status.innerHTML = `Rolled <strong>${sum}</strong> — under <strong>${lastSum}</strong>. Busted.`;
+        status.innerHTML = `Rolled <strong>${sum}</strong> — doesn't beat <strong>${lastSum}</strong>. Round busted, 0 pts.`;
         bustRound();
         return;
       }
@@ -121,17 +137,18 @@ async function playRound(host, roundIdx, updateHeader) {
         lastCount = n;
         emit();
         if (lastCount >= POOL) {
-          status.innerHTML = `Tied at <strong>${sum}</strong> with all 10 dice — no more dice to roll. Banking <strong>${score()}</strong>.`;
-          await sleep(500);
+          status.innerHTML = `Tied at <strong>${sum}</strong> with all 10 dice — no dice left to climb with. Banking <strong>${score()}</strong>.`;
+          await sleep(600);
           finish();
           return;
         }
-        status.innerHTML = `Tied at <strong>${sum}</strong> — no progress, no bust. Roll again with more dice.`;
+        status.innerHTML = `Tied at <strong>${sum}</strong> — turn doesn't count, but you used ${n} dice. Next roll needs <strong>${lastCount + 1}+</strong> dice and a sum over ${lastSum}.`;
         busy = false;
         renderControls();
         return;
       }
 
+      const prevSum = lastSum;
       turnsCleared += 1;
       lastSum = sum;
       lastCount = n;
@@ -140,12 +157,12 @@ async function playRound(host, roundIdx, updateHeader) {
 
       if (lastCount >= POOL) {
         status.innerHTML = `Rolled <strong>${sum}</strong> with all 10 dice — ${turnsCleared} turns cleared for <strong>${score()}</strong> pts.`;
-        await sleep(500);
+        await sleep(600);
         finish();
         return;
       }
 
-      status.innerHTML = `Rolled <strong>${sum}</strong> — beats previous. ${turnsCleared} turns cleared → <strong>${score()}</strong> pts. Keep climbing or stop.`;
+      status.innerHTML = `Rolled <strong>${sum}</strong> — beats <strong>${prevSum}</strong>. ${turnsCleared} turns cleared → <strong>${score()}</strong> pts. Keep climbing or stop.`;
       busy = false;
       renderControls();
     }

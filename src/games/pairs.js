@@ -58,8 +58,8 @@ async function playRound(host, roundIdx, updateHeader) {
     host.appendChild(subInfo);
     host.appendChild(controls);
 
-    const dieEls = state.values.map((v, i) => {
-      const d = createDie(v, { selectable: true });
+    const dieEls = state.values.map((_, i) => {
+      const d = createDie(1, { placeholder: true, selectable: false });
       d.addEventListener('click', () => onDieClick(i));
       tray.appendChild(d);
       return d;
@@ -173,9 +173,11 @@ async function playRound(host, roundIdx, updateHeader) {
 
       for (const i of toReroll) {
         state.values[i] = rollDie();
-        applyState(dieEls[i], { selectable: false });
+        // Blank the face so players can't read the next value in advance.
+        setDie(dieEls[i], 1, { placeholder: true, selectable: false });
       }
       for (const i of toReroll) {
+        delete dieEls[i].dataset.placeholder;
         await animateRoll(dieEls[i], state.values[i]);
       }
 
@@ -213,7 +215,6 @@ async function playRound(host, roundIdx, updateHeader) {
     }
 
     (async () => {
-      for (const d of dieEls) applyState(d, { selectable: false });
       await animateRollSequence(dieEls, state.values);
       state.justRolled = true;
       if (!anyPairPossible(state.values, state.frozen)) {
