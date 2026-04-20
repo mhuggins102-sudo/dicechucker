@@ -771,6 +771,80 @@ kbd {
 }
 .inline-prompt .prompt-msg .muted strong { color: var(--ink-dim); }
 
+/* ---------- Stepper (Threshold y-picker) ---------- */
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+}
+.stepper-value {
+  min-width: 3ch;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.stepper-btn {
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-2);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  width: 40px;
+  height: 40px;
+  font-family: inherit;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+.stepper-btn:hover:not(:disabled) {
+  background: var(--panel-2);
+  border-color: var(--accent);
+}
+.stepper-btn:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.stepper-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.stepper-range {
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ---------- Dice chooser (Threshold 1–8 picker) ---------- */
+
+.dice-chooser {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  gap: var(--s-2);
+  width: 100%;
+}
+.chooser-label {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: var(--s-2);
+}
+
+/* ---------- Tray label (Twenty) ---------- */
+
+.tray-label {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 560px) {
