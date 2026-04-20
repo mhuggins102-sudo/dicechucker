@@ -1,5 +1,5 @@
 import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
-import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
+import { el, clear, button, chip, roundPills, toast, runRounds } from '../ui.js';
 
 const ATTEMPTS = 5;
 const TARGET = 24;
@@ -9,9 +9,11 @@ const SIX_PENALTY = 6;
 const ROUNDS = 3;
 
 const rules = `
-  <p>Each attempt, roll <strong>2 dice</strong> and keep <strong>1</strong>. You get <strong>${ATTEMPTS} attempts</strong> per round.</p>
-  <p>If either die shows a <strong>1</strong>, both dice go <strong>poof</strong> — that attempt is wasted and you keep nothing. A kept <strong>6</strong> has no pip value on its own but bumps the round's multiplier by +1.</p>
-  <p>Score = <strong>(sum of non-6 kept) × (1 + kept 6s)</strong>. Over <strong>${TARGET}</strong> → 0. On ${TARGET} → <strong>${BASE}</strong>. Each pip below ${TARGET} costs <strong>${BELOW_PENALTY}</strong>. Each kept 6 costs <strong>${SIX_PENALTY}</strong>. Best of ${ROUNDS} rounds counts.</p>
+  <p><strong>Goal: land on exactly ${TARGET}.</strong> You get ${ATTEMPTS} tries.</p>
+  <p>Each try: roll 2 dice, keep 1. Your kept dice add up as you go.</p>
+  <p>A kept <strong>6</strong> doesn't add pips — instead it doubles your total (a second 6 triples it, and so on).</p>
+  <p>Hit ${TARGET} exactly → <strong>${BASE}</strong> pts. Under ${TARGET} → lose ${BELOW_PENALTY} pts per pip short. Each kept 6 also costs ${SIX_PENALTY} pts. Go over ${TARGET} → 0.</p>
+  <p>Best of ${ROUNDS} rounds counts.</p>
 `;
 
 function computeValue(kept) {
@@ -35,7 +37,7 @@ async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
     const keptTray = el('div', { class: 'dice-tray' });
     const rollTray = el('div', { class: 'dice-tray center' });
-    const status = el('div', { class: 'status', html: `Roll a pair, then click one to keep. ${ATTEMPTS} attempts per round — any 1 poofs the pair.` });
+    const status = el('div', { class: 'status', html: `Roll a pair, then click one to keep. ${ATTEMPTS} attempts per round.` });
     const controls = el('div', { class: 'button-row' });
 
     host.appendChild(el('div', { class: 'tray-label', text: 'Kept' }));
@@ -101,24 +103,6 @@ async function playRound(host, roundIdx, updateHeader) {
 
       attemptsUsed += 1;
       emit();
-
-      if (values.includes(1)) {
-        dieEls.forEach((d, i) => {
-          if (values[i] === 1) applyState(d, { bust: true });
-          else applyState(d, { dim: true });
-        });
-        const left = ATTEMPTS - attemptsUsed;
-        status.innerHTML = `<strong>Poof</strong> — a <strong>1</strong> wiped the pair. ${breakdownHtml()}. ${left} attempt${left === 1 ? '' : 's'} left.`;
-        await sleep(900);
-        if (attemptsUsed >= ATTEMPTS) {
-          finish();
-          return;
-        }
-        clear(rollTray);
-        busy = false;
-        renderControls();
-        return;
-      }
 
       dieEls.forEach((d, i) => {
         applyState(d, { selectable: true });
@@ -203,7 +187,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'twentyfour',
   name: '24',
-  blurb: 'Roll 2 keep 1 five times — land on 24 exactly. 6s multiply but cost.',
+  blurb: 'Roll 2, keep 1 — five times. Land on 24 exactly.',
   rulesHtml: rules,
   rounds: ROUNDS,
 

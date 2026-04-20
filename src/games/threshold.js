@@ -8,9 +8,10 @@ const Y_MAX = 50;
 const ROUNDS = 5;
 
 const rules = `
-  <p>Pick a target <strong>y</strong> between ${Y_MIN} and ${Y_MAX}. You get <strong>3 rolls</strong> to hit a single-roll total ≥ y. Each roll you choose how many dice to throw (1–${MAX_DICE}).</p>
-  <p>Rolling any <strong>1 wastes that roll</strong> (no sum counted) — but your remaining rolls still stand. Each <strong>6</strong> is a multiplier: +1 per 6, applied to that roll's non-6 pips. <em>e.g.</em> 5, 2, 6, 6 → (5 + 2) × 3 = 21.</p>
-  <p>Hit y → round scores <strong>y</strong>. Miss all 3 rolls → round scores 0. On each following round, y must be <strong>higher than the highest y you've already achieved</strong>. ${ROUNDS} rounds; best round counts.</p>
+  <p><strong>Set a target. Hit it in one roll.</strong></p>
+  <p>Pick a target from ${Y_MIN} to ${Y_MAX}. You get 3 tries to reach it in a single roll. Each try you choose how many dice to throw (1–${MAX_DICE}).</p>
+  <p>Any die showing a <strong>1</strong> wastes that try (no score, but you still have the rest of your tries). Every <strong>6</strong> is a multiplier: the non-6 pips get multiplied by (1 + number of 6s). Example: 5, 2, 6, 6 → (5 + 2) × 3 = 21.</p>
+  <p>Hit the target → bank its value. Miss all 3 tries → 0. Each new round, you must set a target <em>higher</em> than your best hit so far. ${ROUNDS} rounds; best round counts.</p>
 `;
 
 function rollResult(values) {
@@ -213,7 +214,7 @@ function playSingleRound(host, roundIdx, updateHeader, minY) {
 export default {
   id: 'threshold',
   name: 'Threshold',
-  blurb: 'Beat your target in 3 rolls — each round must climb higher.',
+  blurb: 'Pick a target, hit it in one roll. Raise the bar each round.',
   rulesHtml: rules,
   rounds: ROUNDS,
 
