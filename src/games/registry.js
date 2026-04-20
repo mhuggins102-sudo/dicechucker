@@ -7,8 +7,9 @@ import twentyfour from './twentyfour.js';
 import threshold from './threshold.js';
 import ascent from './ascent.js';
 import roundup from './roundup.js';
+import snakes from './snakes.js';
 
-export const games = [pairs, hilo, multiplier, stairs, salvo, twentyfour, threshold, ascent, roundup];
+export const games = [pairs, hilo, multiplier, stairs, salvo, twentyfour, threshold, ascent, roundup, snakes];
 
 export function gameById(id) {
   return games.find(g => g.id === id) || null;
