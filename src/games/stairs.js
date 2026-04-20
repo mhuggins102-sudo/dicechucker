@@ -1,4 +1,4 @@
-import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
+import { rollMany, createDie, animateRollSequence, applyState } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const STAGES = [1, 2, 3, 4];
@@ -70,7 +70,7 @@ async function playRound(host, roundIdx, updateHeader) {
       }
       for (const d of dieEls) tray.appendChild(d);
 
-      await Promise.all(dieEls.map((d, i) => animateRoll(d, values[i])));
+      await animateRollSequence(dieEls, values);
 
       const sum = values.reduce((a, b) => a + b, 0);
       const bust = hasDuplicate(values);

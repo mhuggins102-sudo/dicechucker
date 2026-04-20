@@ -835,6 +835,27 @@ kbd {
   margin-bottom: var(--s-2);
 }
 
+/* ---------- Ascent chooser (dice counts + Stop & Bank inline) ---------- */
+
+.ascent-chooser {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  width: 100%;
+  align-items: stretch;
+}
+.ascent-chooser .btn {
+  flex: 0 0 auto;
+}
+.ascent-chooser .btn.die-count {
+  min-width: 44px;
+  padding: var(--s-2);
+}
+.ascent-chooser .btn.stop-bank {
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--fs-sm);
+}
+
 /* ---------- Tray label (Twenty) ---------- */
 
 .tray-label {

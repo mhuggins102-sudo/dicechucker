@@ -1,4 +1,4 @@
-import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
+import { rollMany, createDie, animateRollSequence, applyState } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, runRounds } from '../ui.js';
 
 const ATTEMPTS = 5;
@@ -99,7 +99,7 @@ async function playRound(host, roundIdx, updateHeader) {
         rollTray.appendChild(d);
         return d;
       });
-      await Promise.all(dieEls.map((d, i) => animateRoll(d, values[i])));
+      await animateRollSequence(dieEls, values);
 
       attemptsUsed += 1;
       emit();

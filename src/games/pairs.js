@@ -1,4 +1,4 @@
-import { rollMany, rollDie, createDie, setDie, animateRoll, applyState } from '../dice.js';
+import { rollMany, rollDie, createDie, setDie, animateRoll, animateRollSequence, applyState } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const SCORE_BY_SUM = {
@@ -175,7 +175,9 @@ async function playRound(host, roundIdx, updateHeader) {
         state.values[i] = rollDie();
         applyState(dieEls[i], { selectable: false });
       }
-      await Promise.all(toReroll.map(i => animateRoll(dieEls[i], state.values[i])));
+      for (const i of toReroll) {
+        await animateRoll(dieEls[i], state.values[i]);
+      }
 
       state.rollsDone += 1;
       state.justRolled = true;
@@ -212,7 +214,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
     (async () => {
       for (const d of dieEls) applyState(d, { selectable: false });
-      await Promise.all(dieEls.map((d, i) => animateRoll(d, state.values[i])));
+      await animateRollSequence(dieEls, state.values);
       state.justRolled = true;
       if (!anyPairPossible(state.values, state.frozen)) {
         bust('No pairs possible on opening roll');
