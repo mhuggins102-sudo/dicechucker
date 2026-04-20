@@ -1,4 +1,4 @@
-import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
+import { rollMany, createDie, animateRollSequence, applyState } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const MAX_DICE = 8;
@@ -140,7 +140,7 @@ function playSingleRound(host, roundIdx, updateHeader, minY) {
       if (attempts > 0) tray.appendChild(el('div', { class: 'stage-divider' }));
       for (const d of dieEls) tray.appendChild(d);
 
-      await Promise.all(dieEls.map((d, i) => animateRoll(d, values[i])));
+      await animateRollSequence(dieEls, values);
 
       attempts += 1;
       emitHead();

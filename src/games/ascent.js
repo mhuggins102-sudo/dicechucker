@@ -1,4 +1,4 @@
-import { rollMany, createDie, animateRoll, applyState } from '../dice.js';
+import { rollMany, createDie, animateRollSequence, applyState } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, sleep, runRounds } from '../ui.js';
 
 const POOL = 10;
@@ -6,10 +6,9 @@ const ROUNDS = 3;
 
 const rules = `
   <p><strong>Climb higher with more dice each turn.</strong></p>
-  <p>Turn 1: roll 1 die. Its pip value is the number to beat.</p>
-  <p>Each following turn, roll more dice than last time (up to 10). If their sum beats your last sum, the new sum becomes the number to beat. If it doesn't, you bust.</p>
-  <p>Stop after any good turn to bank your score. The round ends if you bust, stop, or roll all 10 dice and beat the previous sum.</p>
-  <p>Score = <strong>n × (n + 1) ÷ 2</strong>, where <em>n</em> is the number of turns you cleared (1 to 10). So: 1 turn → 1 pt, 2 → 3, 3 → 6, … 10 → 55. Best of ${ROUNDS} rounds counts.</p>
+  <p>Turn 1: roll 1 die. Its pip value is the sum to beat. Bank 1 pt or keep going.</p>
+  <p>Each later turn, roll more dice than last time (up to 10). Beat the previous sum → clear the turn. Tie the previous sum → no progress, no bust, but you've used up more dice. Roll under → you bust and lose the whole round.</p>
+  <p>Stop any time to bank. Bust = 0 pts. Otherwise score = <strong>n × (n + 1) ÷ 2</strong>, where <em>n</em> is turns cleared (1 → 1 pt, 2 → 3, 3 → 6, … 10 → 55). Best of ${ROUNDS} rounds counts.</p>
 `;
 
 function triangular(n) {
@@ -64,21 +63,22 @@ async function playRound(host, roundIdx, updateHeader) {
       }
 
       const minNext = lastCount + 1;
-      const chooser = el('div', { class: 'dice-chooser' });
-      for (let n = minNext; n <= POOL; n++) {
-        chooser.appendChild(button(String(n), {
-          variant: 'good',
-          onClick: () => doRoll(n),
-        }));
-      }
       controls.appendChild(el('div', {
         class: 'chooser-label',
         text: `Turn ${turnsCleared + 1}: pick ${minNext}–${POOL} dice (must beat ${lastSum})`,
       }));
+      const chooser = el('div', { class: 'ascent-chooser' });
+      for (let n = minNext; n <= POOL; n++) {
+        chooser.appendChild(button(String(n), {
+          variant: 'good die-count',
+          onClick: () => doRoll(n),
+        }));
+      }
+      chooser.appendChild(button('Stop & Bank', {
+        variant: 'ghost stop-bank',
+        onClick: finish,
+      }));
       controls.appendChild(chooser);
-      controls.appendChild(el('div', { class: 'button-row' }, [
-        button('Stop & Bank', { onClick: finish }),
-      ]));
     }
 
     async function doRoll(n) {
@@ -92,7 +92,8 @@ async function playRound(host, roundIdx, updateHeader) {
       if (turnsCleared > 0) tray.appendChild(el('div', { class: 'stage-divider' }));
       for (const d of dieEls) tray.appendChild(d);
 
-      await Promise.all(dieEls.map((d, i) => animateRoll(d, values[i])));
+      status.innerHTML = 'Rolling…';
+      await animateRollSequence(dieEls, values);
 
       const sum = values.reduce((a, b) => a + b, 0);
 
@@ -108,10 +109,26 @@ async function playRound(host, roundIdx, updateHeader) {
         return;
       }
 
-      if (sum <= lastSum) {
+      if (sum < lastSum) {
         dieEls.forEach(d => applyState(d, { bust: true }));
-        status.innerHTML = `Rolled <strong>${sum}</strong> — didn't beat <strong>${lastSum}</strong>. Busted on turn ${turnsCleared + 1}.`;
+        status.innerHTML = `Rolled <strong>${sum}</strong> — under <strong>${lastSum}</strong>. Busted.`;
         bustRound();
+        return;
+      }
+
+      if (sum === lastSum) {
+        dieEls.forEach(d => applyState(d, { dim: true }));
+        lastCount = n;
+        emit();
+        if (lastCount >= POOL) {
+          status.innerHTML = `Tied at <strong>${sum}</strong> with all 10 dice — no more dice to roll. Banking <strong>${score()}</strong>.`;
+          await sleep(500);
+          finish();
+          return;
+        }
+        status.innerHTML = `Tied at <strong>${sum}</strong> — no progress, no bust. Roll again with more dice.`;
+        busy = false;
+        renderControls();
         return;
       }
 
@@ -136,10 +153,9 @@ async function playRound(host, roundIdx, updateHeader) {
     function bustRound() {
       done = true;
       clear(controls);
-      const s = score();
-      toast(`Busted — ${s} pt${s === 1 ? '' : 's'}`, { tone: 'bad', duration: 2000 });
-      emit({ bust: s === 0 });
-      setTimeout(() => resolve(s), 1400);
+      toast('Busted — 0 pts', { tone: 'bad', duration: 2000 });
+      emit({ bust: true, score: 0 });
+      setTimeout(() => resolve(0), 1400);
     }
 
     function finish() {

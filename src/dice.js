@@ -56,6 +56,12 @@ export function animateRoll(el, finalValue, { duration = 450 } = {}) {
   });
 }
 
+export async function animateRollSequence(dieEls, values, options) {
+  for (let i = 0; i < dieEls.length; i++) {
+    await animateRoll(dieEls[i], values[i], options);
+  }
+}
+
 function readState(el) {
   return {
     frozen: el.dataset.frozen === 'true',
