@@ -30,9 +30,10 @@ function anyPairPossible(values, frozenSet) {
 }
 
 const rules = `
-  <p>Roll 10 dice. Freeze pairs whose values share a common sum — any pair you freeze must match the sum of your first frozen pair.</p>
-  <p>After freezing, <strong>reroll</strong> remaining dice or <strong>stop</strong>. If you reroll and can't form another pair of the same sum, you <strong>bust</strong> (0 for the round).</p>
-  <p>Pair value by sum: 7 → 5, 6/8 → 6, 5/9 → 7, 4/10 → 8, 3/11 → 9, 2/12 → 10. Best of 3 rounds counts.</p>
+  <p><strong>Collect pairs of dice that add to the same number.</strong></p>
+  <p>Roll 10 dice. Pick two dice whose values add up — that total becomes your "target." Every pair you lock in from now on must add to that same target.</p>
+  <p>After locking pairs, either <strong>stop</strong> and bank, or <strong>reroll</strong> the leftover dice to try for more pairs. If a reroll has no way to make another target-total pair, you bust and score 0 for the round.</p>
+  <p>Rarer totals pay more. Totals of 2 or 12 are worth 10 pts each pair, down to 5 pts for a 7. Best of 3 rounds counts.</p>
 `;
 
 async function playRound(host, roundIdx, updateHeader) {
@@ -226,7 +227,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'pairs',
   name: 'Pair Sums',
-  blurb: 'Roll 10, freeze matching-sum pairs, reroll or stop.',
+  blurb: 'Lock pairs that add to the same total. Reroll for more or stop.',
   rulesHtml: rules,
   rounds: 3,
 

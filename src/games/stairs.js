@@ -5,9 +5,10 @@ const STAGES = [1, 2, 3, 4];
 const ROUNDS = 3;
 
 const rules = `
-  <p>Climb four stages, rolling more dice each time. Stage 1: roll 1 die. Stage 2: roll 2 dice. Stage 3: roll 3 dice. Stage 4: roll 4 dice (10 dice total).</p>
-  <p>Each stage's dice add to your running total — but if a stage has any <strong>duplicate values</strong>, you <strong>bust</strong> and the round scores 0.</p>
-  <p>You may <strong>stop &amp; bank</strong> after any successful stage. Best of 3 rounds counts.</p>
+  <p><strong>Climb four stages without repeating a number.</strong></p>
+  <p>Stage 1: roll 1 die. Stage 2: roll 2. Stage 3: roll 3. Stage 4: roll 4. That's 10 dice over 4 stages.</p>
+  <p>All the dice in a single stage must show different values. If any stage shows a duplicate, the round busts and scores 0.</p>
+  <p>Every pip you roll adds to your score. After any clean stage you can stop and bank. Best of 3 rounds counts.</p>
 `;
 
 function hasDuplicate(values) {
@@ -136,7 +137,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'stairs',
   name: 'Stairs',
-  blurb: 'Climb 4 stages of dice — no duplicates per stage.',
+  blurb: 'Four stages of 1, 2, 3, 4 dice — no repeats per stage.',
   rulesHtml: rules,
   rounds: ROUNDS,
 

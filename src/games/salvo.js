@@ -7,9 +7,10 @@ const MAX_PER_ROLL = 4;
 const ROUNDS = 3;
 
 const rules = `
-  <p>You have a pool of 10 dice. On each roll, choose to throw <strong>1–4 dice</strong> at once. If any die comes up a <strong>1</strong>, the whole round busts.</p>
-  <p>Otherwise, the rolled pips add to your running total. You may <strong>stop &amp; bank</strong> or roll again.</p>
-  <p>Max <strong>3 rolls</strong> per round and at most 10 dice total. Best of 3 rounds counts.</p>
+  <p><strong>Throw handfuls of dice — don't roll a 1.</strong></p>
+  <p>Each throw: pick 1–4 dice and roll them. If any die comes up a 1, the round busts.</p>
+  <p>Clean throw: add up all the pips. Stop and bank, or throw again.</p>
+  <p>Up to 3 throws and 10 dice per round. Best of 3 rounds counts.</p>
 `;
 
 async function playRound(host, roundIdx, updateHeader) {
@@ -125,7 +126,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'salvo',
   name: 'Salvo',
-  blurb: 'Throw 1–4 dice at a time. Any 1 busts.',
+  blurb: 'Throw 1–4 dice at a time. Any 1 busts the round.',
   rulesHtml: rules,
   rounds: ROUNDS,
 

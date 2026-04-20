@@ -5,9 +5,10 @@ const POOL = 10;
 const ROUNDS = 3;
 
 const rules = `
-  <p>Pool of 10 dice. One die is rolled at a time. After each roll, call <strong>Higher</strong> or <strong>Lower</strong> for the next roll — or <strong>Stop</strong> and bank.</p>
-  <p>If the next roll is strictly in the wrong direction, you <strong>bust</strong> and the round scores 0. A <strong>tie</strong> doesn't bust — the die is wasted (no pips added) but still counts against the 10-die pool.</p>
-  <p>Score = <strong>total pips</strong> of every die that counted. Best of 3 rounds counts.</p>
+  <p><strong>Guess whether the next roll is higher or lower.</strong></p>
+  <p>Roll one die at a time, up to 10. Before each new roll, call <em>Higher</em> or <em>Lower</em> than the last one — or <em>Stop</em> and bank.</p>
+  <p>Right guess: add the new die's pips to your score. Wrong guess: bust, round scores 0. Tie: the die is wasted (no pips) but no bust.</p>
+  <p>Best of 3 rounds counts.</p>
 `;
 
 async function playRound(host, roundIdx, updateHeader) {
@@ -143,7 +144,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'hilo',
   name: 'Higher or Lower',
-  blurb: 'Predict the next die. Ties waste the die.',
+  blurb: 'Call the next die higher or lower. Wrong call busts.',
   rulesHtml: rules,
   rounds: ROUNDS,
 

@@ -5,9 +5,12 @@ const POOL = 10;
 const ROUNDS = 3;
 
 const rules = `
-  <p>Pool of 10 dice, rolled one at a time. Your multiplier starts at <strong>×1</strong> and applies only to rolls you make <em>after</em> the multiplier changes.</p>
-  <p>Rolling <strong>2–5</strong> adds <em>value × current multiplier</em> to your score. Rolling a <strong>6</strong> bumps the multiplier up by 1 for future rolls (the 6 itself scores nothing). Rolling a <strong>1</strong> busts the round.</p>
-  <p>Stop whenever to bank your score. Best of 3 rounds counts.</p>
+  <p><strong>Push your luck with a growing multiplier.</strong></p>
+  <p>Roll dice one at a time, up to 10. You start at ×1.</p>
+  <p>Roll a <strong>2–5</strong>: its pips, times your multiplier, go on your score.<br>
+  Roll a <strong>6</strong>: the 6 scores nothing, but your multiplier goes up by 1 for all future rolls.<br>
+  Roll a <strong>1</strong>: bust — round scores 0.</p>
+  <p>Stop anytime to bank. Best of 3 rounds counts.</p>
 `;
 
 async function playRound(host, roundIdx, updateHeader) {
@@ -113,7 +116,7 @@ async function playRound(host, roundIdx, updateHeader) {
 export default {
   id: 'multiplier',
   name: 'Sixes Multiplier',
-  blurb: 'Roll to add; 6s multiply later rolls; 1s bust.',
+  blurb: 'Add pips × multiplier. 6s grow the multiplier, 1s bust.',
   rulesHtml: rules,
   rounds: ROUNDS,
 
