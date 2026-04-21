@@ -32,6 +32,7 @@ async function playAttempt(host, attemptIdx) {
     const runupDieEls = [];
     const runupFrozen = new Set();
     let staged = new Set();
+    let pendingFreeze = false;
     let done = false;
     let busy = false;
 
@@ -78,13 +79,26 @@ async function playAttempt(host, attemptIdx) {
         }));
         return;
       }
-      const afterFreezeSum = runupSum() + stagedSum();
-      const canFreeze = staged.size > 0;
-      controls.appendChild(button(
-        `Freeze staged (${staged.size}, sum → ${afterFreezeSum}) & reroll`,
-        { variant: 'good', disabled: !canFreeze, onClick: runupFreezeAndReroll },
-      ));
-      if (runupFrozen.size > 0 && staged.size === 0) {
+      if (pendingFreeze) {
+        // User must freeze at least one die from the current throw before
+        // anything else. No stop/reroll escape hatch here.
+        const afterFreezeSum = runupSum() + stagedSum();
+        const canFreeze = staged.size > 0;
+        controls.appendChild(button(
+          `Freeze staged (${staged.size}, sum → ${afterFreezeSum})`,
+          { variant: 'good', disabled: !canFreeze, onClick: commitFreeze },
+        ));
+        return;
+      }
+      // Already froze from this throw — pick next action.
+      const unfrozen = DICE - runupFrozen.size;
+      if (unfrozen > 0) {
+        controls.appendChild(button(`Reroll ${unfrozen} unfrozen die${unfrozen === 1 ? '' : 's'}`, {
+          variant: 'reroll',
+          onClick: rerollUnfrozen,
+        }));
+      }
+      if (runupFrozen.size > 0) {
         controls.appendChild(button(`Stop & Jump (${runupFrozen.size} dice)`, {
           onClick: startJump,
         }));
@@ -104,7 +118,8 @@ async function playAttempt(host, attemptIdx) {
       }
       status.innerHTML = 'Rolling…';
       await animateRollSequence(runupDieEls, rolls);
-      status.innerHTML = `Click dice to freeze (≥1), keep frozen sum ≤ <strong>${MAX_RUNUP}</strong>. More frozen dice = more dice for the jump.`;
+      pendingFreeze = true;
+      status.innerHTML = `Pick at least one die to freeze. Keep the frozen sum ≤ <strong>${MAX_RUNUP}</strong> or foul.`;
       busy = false;
       renderRunup();
     }
@@ -117,18 +132,18 @@ async function playAttempt(host, attemptIdx) {
       renderRunup();
     }
 
-    async function runupFreezeAndReroll() {
+    async function commitFreeze() {
       if (busy || staged.size === 0) return;
       busy = true;
       clear(controls);
       for (const i of staged) runupFrozen.add(i);
       staged.clear();
+      pendingFreeze = false;
       renderRunup();
       clear(controls);
 
       const total = runupSum();
       if (total > MAX_RUNUP) {
-        // Foul
         for (const i of runupFrozen) applyState(runupDieEls[i], { bust: true });
         status.innerHTML = `Frozen sum <strong>${total}</strong> > ${MAX_RUNUP} — foul!`;
         await sleep(900);
@@ -143,19 +158,28 @@ async function playAttempt(host, attemptIdx) {
         return;
       }
 
-      // Reroll unfrozen
+      status.innerHTML = `Frozen sum <strong>${total}</strong> (of ${MAX_RUNUP} allowed). Reroll the rest, or stop and jump.`;
+      busy = false;
+      renderRunup();
+    }
+
+    async function rerollUnfrozen() {
+      if (busy || pendingFreeze) return;
+      busy = true;
+      clear(controls);
       const toReroll = [];
       for (let i = 0; i < DICE; i++) if (!runupFrozen.has(i)) toReroll.push(i);
       for (const i of toReroll) {
         setDie(runupDieEls[i], 1, { placeholder: true, selectable: false });
         runupValues[i] = rollDie();
       }
-      status.innerHTML = `Rerolling ${toReroll.length}… frozen sum <strong>${total}</strong>.`;
+      status.innerHTML = `Rerolling ${toReroll.length}… frozen sum <strong>${runupSum()}</strong>.`;
       for (const i of toReroll) {
         delete runupDieEls[i].dataset.placeholder;
         await animateRoll(runupDieEls[i], runupValues[i]);
       }
-      status.innerHTML = `Frozen sum <strong>${total}</strong> (of ${MAX_RUNUP} allowed). Click dice to stage.`;
+      pendingFreeze = true;
+      status.innerHTML = `Rolled — now you must freeze at least one of these dice. Frozen so far: <strong>${runupSum()}</strong>.`;
       busy = false;
       renderRunup();
     }
