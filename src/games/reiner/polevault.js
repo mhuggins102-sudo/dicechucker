@@ -10,6 +10,7 @@ const MAX_HEIGHT = 48;
 const rules = `
   <p><strong>Clear the bar — but no 1s allowed.</strong></p>
   <p>Pick <strong>1–${MAX_DICE} dice</strong> to throw. Clear the bar if the sum is at or above the current height <em>and</em> none of the dice show a <strong>1</strong>.</p>
+  <p>Before you take your first attempt at a height you can <em>skip</em> ahead or <em>stop &amp; bank</em>. Once you attempt a height even once, you're committed — clear it or fail 3 times.</p>
   <p>Miss <strong>3 times at the same height</strong> and the event ends. First height <strong>${START_HEIGHT}</strong>; bar rises by <strong>${HEIGHT_STEP}</strong>.</p>
 `;
 
@@ -42,8 +43,19 @@ export default {
       function renderHead() {
         clear(head);
         head.appendChild(chip('Height', height, { tone: 'accent' }));
-        head.appendChild(chip('Attempt', `${attempts + 1} / ${ATTEMPTS_PER_HEIGHT}`));
+        const attemptLabel = Math.min(attempts + 1, ATTEMPTS_PER_HEIGHT);
+        head.appendChild(chip('Attempt', `${attemptLabel} / ${ATTEMPTS_PER_HEIGHT}`));
         head.appendChild(chip('Cleared', cleared, { tone: 'good' }));
+      }
+
+      function skipHeight() {
+        if (busy || done) return;
+        if (attempts !== 0) return;
+        if (height >= MAX_HEIGHT) return;
+        height += HEIGHT_STEP;
+        renderHead();
+        status.innerHTML = `Skipped — bar now at <strong>${height}</strong>. Pick your dice, or skip again.`;
+        renderControls();
       }
 
       async function doJump(n) {
@@ -112,7 +124,7 @@ export default {
         if (done) return;
         controls.appendChild(el('div', {
           class: 'chooser-label',
-          text: `Dice to throw at ${height} (attempt ${attempts + 1} of ${ATTEMPTS_PER_HEIGHT})`,
+          text: `Dice to throw at ${height} (attempt ${Math.min(attempts + 1, ATTEMPTS_PER_HEIGHT)} of ${ATTEMPTS_PER_HEIGHT})`,
         }));
         const chooser = el('div', { class: 'inline-chooser' });
         for (let n = 1; n <= MAX_DICE; n++) {
@@ -121,18 +133,27 @@ export default {
             onClick: () => doJump(n),
           }));
         }
-        if (cleared > 0) {
-          chooser.appendChild(button('Stop & Bank', {
-            variant: 'stop-bank',
-            onClick: finish,
-          }));
+        if (attempts === 0) {
+          if (height < MAX_HEIGHT) {
+            chooser.appendChild(button(`Skip to ${height + HEIGHT_STEP}`, {
+              variant: 'reroll',
+              onClick: skipHeight,
+            }));
+          }
+          if (cleared > 0) {
+            chooser.appendChild(button('Stop & Bank', {
+              variant: 'stop-bank',
+              onClick: finish,
+            }));
+          }
         }
         controls.appendChild(chooser);
       }
 
       function finish() {
-        if (busy || done) return;
+        if (done) return;
         done = true;
+        busy = false;
         clear(controls);
         toast(`Pole Vault: ${cleared} pts`, { tone: cleared > 0 ? 'good' : 'bad' });
         renderHead();
