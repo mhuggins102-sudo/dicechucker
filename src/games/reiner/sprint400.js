@@ -26,7 +26,7 @@ export default {
   async play(host) {
     return new Promise((resolve) => {
       const head = el('div', { class: 'score-strip' });
-      const lanesWrap = el('div', { class: 'lanes' });
+      const lanesWrap = el('div', { class: 'lanes two-col' });
       const laneEls = [];
       const laneTrays = [];
 

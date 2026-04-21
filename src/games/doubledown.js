@@ -2,14 +2,14 @@ import { rollMany, createDie, animateRollSequence, applyState, setDie } from '..
 import { el, clear, button, chip, roundPills, toast, runRounds } from '../ui.js';
 
 const PAIRS = 5;
-const REROLLS = 10;
+const REROLLS = 8;
 const ROUNDS = 3;
 
 const rules = `
   <p><strong>Roll 5 pairs of dice. Lock or reroll each pair. Dodge the snake eyes.</strong></p>
   <p>Roll two dice at a time. After each pair, <strong>lock it in</strong> or <strong>reroll</strong> (burns one of your ${REROLLS} rerolls). Play until 5 pairs are locked.</p>
-  <p><strong>Pair scoring:</strong> normally the sum. A single <strong>6</strong> scores its own pips <em>and</em> doubles the other die (6+4 → 6 + 8 = 14; 6+5 → 6 + 10 = 16). Two <strong>6s</strong> double each other → <strong>24</strong>. A single <strong>1</strong> busts the pair to <strong>0</strong> (but you can reroll).</p>
-  <p><strong>Snake eyes</strong> (both 1s): the whole round busts to 0 and <em>cannot</em> be rerolled. With up to 15 rolls available, snake eyes appear ~35% of the time if you press every reroll — mind how deep you push.</p>
+  <p><strong>Pair scoring:</strong> normally the sum. Two <strong>6s</strong> double each other → <strong>24</strong>. A single <strong>1</strong> busts the pair to <strong>0</strong> (but you can reroll).</p>
+  <p><strong>Snake eyes</strong> (both 1s): the whole round busts to 0 and <em>cannot</em> be rerolled. With up to 13 rolls available, snake eyes appear ~30% of the time if you press every reroll — mind how deep you push.</p>
   <p>Best of ${ROUNDS} rounds counts.</p>
 `;
 
@@ -17,8 +17,6 @@ function scorePair(a, b) {
   if (a === 1 && b === 1) return { kind: 'snake', pts: 0 };
   if (a === 1 || b === 1) return { kind: 'bust', pts: 0 };
   if (a === 6 && b === 6) return { kind: 'double6', pts: 24 };
-  if (a === 6) return { kind: 'six', pts: 6 + 2 * b };
-  if (b === 6) return { kind: 'six', pts: 6 + 2 * a };
   return { kind: 'sum', pts: a + b };
 }
 
@@ -26,7 +24,6 @@ function describePair(a, b, pts, kind) {
   if (kind === 'snake') return `<strong>Snake eyes!</strong> Round busted.`;
   if (kind === 'bust') return `${a} + ${b} — a single 1 busts this pair.`;
   if (kind === 'double6') return `${a} + ${b} — double sixes! <strong>${pts}</strong> points.`;
-  if (kind === 'six') return `${a} + ${b} — the 6 scores plus doubles the other. <strong>${pts}</strong> points.`;
   return `${a} + ${b} = <strong>${pts}</strong>.`;
 }
 
@@ -205,7 +202,7 @@ export default {
   id: 'doubledown',
   decathlon: 'ryno',
   name: 'Double Down',
-  blurb: 'Roll 5 pairs. 6s double, 1s bust, snake eyes kill the round.',
+  blurb: 'Roll 5 pairs. 1s bust the pair, snake eyes kill the round.',
   rulesHtml: rules,
   rounds: ROUNDS,
 
