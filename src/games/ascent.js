@@ -105,7 +105,7 @@ async function playRound(host, roundIdx, updateHeader) {
           } else {
             const need = lastSum;
             const remaining = n - shown.length;
-            const tail = remaining > 0 ? ` (${remaining} die${remaining === 1 ? '' : 's'} to go)` : '';
+            const tail = remaining > 0 ? ` (${remaining} ${remaining === 1 ? 'die' : 'dice'} to go)` : '';
             status.innerHTML = `So far: <strong>${running}</strong> — need > <strong>${need}</strong>${tail}.`;
           }
         },

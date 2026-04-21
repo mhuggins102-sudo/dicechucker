@@ -93,7 +93,7 @@ async function playAttempt(host, attemptIdx) {
       // Already froze from this throw — pick next action.
       const unfrozen = DICE - runupFrozen.size;
       if (unfrozen > 0) {
-        controls.appendChild(button(`Reroll ${unfrozen} unfrozen die${unfrozen === 1 ? '' : 's'}`, {
+        controls.appendChild(button(`Reroll ${unfrozen} unfrozen ${unfrozen === 1 ? 'die' : 'dice'}`, {
           variant: 'reroll',
           onClick: rerollUnfrozen,
         }));
@@ -194,7 +194,7 @@ async function playAttempt(host, attemptIdx) {
       staged = new Set();
       phaseLabel.textContent = 'Jump';
       clear(tray);
-      status.innerHTML = `Jump phase — throw ${jumpCount} die${jumpCount === 1 ? '' : 's'} to begin.`;
+      status.innerHTML = `Jump phase — throw ${jumpCount} ${jumpCount === 1 ? 'die' : 'dice'} to begin.`;
       renderJumpControls();
     }
 
@@ -217,7 +217,7 @@ async function playAttempt(host, attemptIdx) {
       clear(controls);
       if (done) return;
       if (jumpDieEls.length === 0) {
-        controls.appendChild(button(`Throw ${jumpCount} die${jumpCount === 1 ? '' : 's'}`, {
+        controls.appendChild(button(`Throw ${jumpCount} ${jumpCount === 1 ? 'die' : 'dice'}`, {
           variant: 'good',
           onClick: jumpInitial,
         }));

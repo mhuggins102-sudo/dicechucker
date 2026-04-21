@@ -120,7 +120,7 @@ async function playRound(host, roundIdx, updateHeader) {
       if (done) return;
       if (remaining() === 0) { finish(); return; }
       const n = nextRoll();
-      controls.appendChild(button(`Roll ${n} die${n === 1 ? '' : 's'}`, {
+      controls.appendChild(button(`Roll ${n} ${n === 1 ? 'die' : 'dice'}`, {
         onClick: continueRoll,
         variant: 'good',
       }));
@@ -236,8 +236,8 @@ async function playRound(host, roundIdx, updateHeader) {
       busy = true;
       clear(controls);
       const n = nextRoll();
-      status.innerHTML = `Rolling ${n} die${n === 1 ? '' : 's'}…`;
-      const { values, dieEls } = await rollDiceInto(n, `Rolling ${n} die${n === 1 ? '' : 's'}`);
+      status.innerHTML = `Rolling ${n} ${n === 1 ? 'die' : 'dice'}…`;
+      const { values, dieEls } = await rollDiceInto(n, `Rolling ${n} ${n === 1 ? 'die' : 'dice'}`);
 
       let lockIdx = [];
       if (path === 'sets') {
@@ -263,7 +263,7 @@ async function playRound(host, roundIdx, updateHeader) {
       }
 
       const lockedPips = lockIdx.map(i => values[i]);
-      commitLocks(values, dieEls, lockIdx, `Locked ${lockIdx.length} new die${lockIdx.length === 1 ? '' : 's'} (${lockedPips.join(', ')}).`);
+      commitLocks(values, dieEls, lockIdx, `Locked ${lockIdx.length} new ${lockIdx.length === 1 ? 'die' : 'dice'} (${lockedPips.join(', ')}).`);
       busy = false;
     }
 

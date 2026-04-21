@@ -139,7 +139,7 @@ function playSingleRound(host, roundIdx, updateHeader, minY) {
       const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
       for (const d of dieEls) tray.appendChild(d);
 
-      status.innerHTML = `Rolling ${n} die${n === 1 ? '' : 's'} — need <strong>${y}</strong>.`;
+      status.innerHTML = `Rolling ${n} ${n === 1 ? 'die' : 'dice'} — need <strong>${y}</strong>.`;
 
       await animateRollSequence(dieEls, values, {
         onReveal: (_i, _v, shown) => {

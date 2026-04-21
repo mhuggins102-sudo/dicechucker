@@ -66,7 +66,7 @@ export default {
         const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
         for (const d of dieEls) tray.appendChild(d);
 
-        status.innerHTML = `Throwing ${n} die${n === 1 ? '' : 's'} at <strong>${height}</strong>…`;
+        status.innerHTML = `Throwing ${n} ${n === 1 ? 'die' : 'dice'} at <strong>${height}</strong>…`;
         await animateRollSequence(dieEls, values, {
           onReveal: (_i, _v, shown) => {
             const partial = shown.reduce((a, b) => a + b, 0);

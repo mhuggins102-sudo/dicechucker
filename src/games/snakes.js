@@ -59,7 +59,9 @@ async function playRound(host, roundIdx, updateHeader) {
       const cap = remainingDice();
       controls.appendChild(el('div', {
         class: 'chooser-label',
-        text: `Roll ${rollsUsed + 1} of ${MAX_ROLLS} — pick 1–${cap} dice`,
+        text: cap === 1
+          ? `Roll ${rollsUsed + 1} of ${MAX_ROLLS} — 1 die left`
+          : `Roll ${rollsUsed + 1} of ${MAX_ROLLS} — pick 1–${cap} dice`,
       }));
       const chooser = el('div', { class: 'inline-chooser' });
       for (let n = 1; n <= cap; n++) {
@@ -88,7 +90,7 @@ async function playRound(host, roundIdx, updateHeader) {
       if (rollsUsed > 0) tray.appendChild(el('div', { class: 'stage-divider' }));
       for (const d of dieEls) tray.appendChild(d);
 
-      status.innerHTML = `Rolling ${n} die${n === 1 ? '' : 's'}…`;
+      status.innerHTML = `Rolling ${n} ${n === 1 ? 'die' : 'dice'}…`;
 
       await animateRollSequence(dieEls, values, {
         onReveal: (_i, _v, shown) => {
@@ -124,7 +126,8 @@ async function playRound(host, roundIdx, updateHeader) {
         return;
       }
 
-      status.innerHTML = `${breakdown} Total: <strong>${total}</strong>. ${remainingRolls()} roll${remainingRolls() === 1 ? '' : 's'} and ${remainingDice()} dice left.`;
+      const leftDice = remainingDice();
+      status.innerHTML = `${breakdown} Total: <strong>${total}</strong>. ${remainingRolls()} roll${remainingRolls() === 1 ? '' : 's'} and ${leftDice} ${leftDice === 1 ? 'die' : 'dice'} left.`;
       busy = false;
       renderControls();
     }

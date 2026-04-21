@@ -66,7 +66,7 @@ async function playRound(host, roundIdx, updateHeader) {
       }
       for (const d of dieEls) tray.appendChild(d);
 
-      status.innerHTML = `Rolling stage ${stageIdx + 1} — ${count} die${count === 1 ? '' : 's'}.`;
+      status.innerHTML = `Rolling stage ${stageIdx + 1} — ${count} ${count === 1 ? 'die' : 'dice'}.`;
 
       await animateRollSequence(dieEls, values, {
         onReveal: (_i, _v, shown) => {
