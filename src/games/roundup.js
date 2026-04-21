@@ -66,6 +66,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
     function renderInitialControls() {
       clear(controls);
+      controls.classList.remove('wrap-4');
       if (done) return;
       controls.appendChild(button(`Roll ${ROLL_SIZE} dice`, {
         onClick: firstRoll,
@@ -75,6 +76,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
     function renderContinueControls() {
       clear(controls);
+      controls.classList.remove('wrap-4');
       if (done) return;
       if (remaining() === 0) { finish(); return; }
       const n = nextRoll();
@@ -115,6 +117,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
     function offerCommitChoice(values, dieEls) {
       clear(controls);
+      controls.classList.add('wrap-4');
       for (const v of distinctValues(values)) {
         const count = values.filter(x => x === v).length;
         controls.appendChild(button(`Lock ${count} × ${v}s`, {

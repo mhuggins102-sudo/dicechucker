@@ -380,6 +380,14 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.button-row.wrap-4 {
+  flex-wrap: wrap;
+}
+.button-row.wrap-4 .btn {
+  flex: 0 1 calc((100% - 3 * var(--s-2)) / 4);
+  overflow: visible;
+  text-overflow: clip;
+}
 
 /* ---------- Panels ---------- */
 
