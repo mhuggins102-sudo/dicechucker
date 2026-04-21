@@ -5,7 +5,7 @@ import multiplier from './multiplier.js';
 import stairs from './stairs.js';
 import salvo from './salvo.js';
 import twentyfour from './twentyfour.js';
-import threshold from './threshold.js';
+import doubledown from './doubledown.js';
 import ascent from './ascent.js';
 import roundup from './roundup.js';
 import snakes from './snakes.js';
@@ -24,7 +24,7 @@ import run1500 from './reiner/run1500.js';
 
 export const games = [
   // Ryno events
-  pairs, hilo, multiplier, stairs, salvo, twentyfour, threshold, ascent, roundup, snakes,
+  pairs, hilo, multiplier, stairs, salvo, twentyfour, doubledown, ascent, roundup, snakes,
   // Reiner events, in classic decathlon order
   sprint100, longjump, shotput, highjump, sprint400,
   hurdles, discus, polevault, javelin, run1500,
