@@ -8,10 +8,15 @@ const ROUNDS = 3;
 
 const rules = `
   <p><strong>Roll pairs, lock the low die, fill a 10-die collection.</strong></p>
-  <p>Roll two dice at a time. From pairs 1–8, lock the <strong>lower</strong> die (either one if they tie); the higher is discarded. On the <strong>final pair</strong>, you lock <strong>both</strong> dice. Score = sum of all 10 collected.</p>
+  <p>Roll two dice at a time. From pairs 1–8, lock the <strong>lower</strong> die (either one if they tie); the higher is discarded. On the <strong>final pair</strong>, you lock <strong>both</strong> dice.</p>
+  <p><strong>Scoring:</strong> each locked die scores its pip value, except a <strong>1 scores −5</strong>. Round score is the sum, floored at 0.</p>
   <p><strong>Snake eyes</strong> (both 1s): the round busts to 0 and <em>cannot</em> be rerolled.</p>
-  <p>Any other pair can be locked as rolled — including a low <strong>1</strong>. Or spend one of your <strong>${REROLLS}</strong> rerolls to try again. Best of ${ROUNDS} rounds counts.</p>
+  <p>Any pair may be locked as rolled — including a 1 — or rerolled at the cost of one of your <strong>${REROLLS}</strong> rerolls. Best of ${ROUNDS} rounds counts.</p>
 `;
+
+function scoreValue(pip) {
+  return pip === 1 ? -5 : pip;
+}
 
 function classifyPair(a, b, takeBoth) {
   if (a === 1 && b === 1) return { kind: 'snake', lockIdx: [] };
@@ -81,8 +86,14 @@ async function playRound(host, roundIdx, updateHeader) {
       if (done || !currentPair) return;
       const { kind, lockIdx, values } = currentPair;
       if (kind === 'snake') return;
-      const pts = lockIdx.reduce((s, i) => s + values[i], 0);
-      const lockLabel = kind === 'both' ? `Lock both (${pts} pts)` : `Lock the ${pts}`;
+      const pts = lockIdx.reduce((s, i) => s + scoreValue(values[i]), 0);
+      let lockLabel;
+      if (kind === 'both') {
+        lockLabel = `Lock both (${pts} pts)`;
+      } else {
+        const pip = values[lockIdx[0]];
+        lockLabel = pip === 1 ? `Lock the 1 (−5 pts)` : `Lock the ${pip}`;
+      }
       controls.appendChild(button(lockLabel, {
         onClick: lockPair,
         variant: 'good',
@@ -148,10 +159,13 @@ async function playRound(host, roundIdx, updateHeader) {
         else applyState(d, { dim: true });
       });
       if (kind === 'both') {
-        status.innerHTML = `${a} + ${b} — final pair, lock both for <strong>${a + b}</strong>.`;
+        const pts = scoreValue(a) + scoreValue(b);
+        status.innerHTML = `${a} + ${b} — final pair, lock both for <strong>${pts}</strong> pts.`;
       } else {
         const low = Math.min(a, b);
-        status.innerHTML = `${a} + ${b} — lock the <strong>${low}</strong>${low === 1 ? ' or reroll' : ''}.`;
+        status.innerHTML = low === 1
+          ? `${a} + ${b} — lock the 1 for <strong>−5</strong> or reroll.`
+          : `${a} + ${b} — lock the <strong>${low}</strong>.`;
       }
       renderPairControls();
     }
@@ -164,7 +178,7 @@ async function playRound(host, roundIdx, updateHeader) {
         if (lockSet.has(i)) {
           applyState(dieEls[i], { frozen: true });
           collectTray.appendChild(dieEls[i]);
-          total += values[i];
+          total += scoreValue(values[i]);
           collectedCount += 1;
         }
       }
@@ -195,9 +209,10 @@ async function playRound(host, roundIdx, updateHeader) {
       done = true;
       clear(controls);
       rollLane.dataset.active = 'false';
-      toast(`Round ${roundIdx + 1}: ${total} pts`, { tone: 'good' });
-      emit({ done: true });
-      setTimeout(() => resolve(total), 900);
+      const finalScore = Math.max(0, total);
+      toast(`Round ${roundIdx + 1}: ${finalScore} pts`, { tone: finalScore > 0 ? 'good' : 'bad' });
+      emit({ done: true, score: finalScore });
+      setTimeout(() => resolve(finalScore), 900);
     }
 
     emit();
@@ -209,7 +224,7 @@ export default {
   id: 'lowball',
   decathlon: 'ryno',
   name: 'Lowball',
-  blurb: 'Roll pairs, lock the low die. Snake eyes kill the round.',
+  blurb: 'Roll pairs, lock the low die. 1s score −5; snake eyes kill the round.',
   rulesHtml: rules,
   rounds: ROUNDS,
 

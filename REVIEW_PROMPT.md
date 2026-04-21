@@ -125,7 +125,7 @@ Best of 3 rounds. Up to 3 throws per round, up to 4 dice each, 10 dice pool max.
 Best of 3 rounds. 5 tries. Each try: roll 2 dice, keep 1. Kept dice add up, except a kept **6** doesn't add pips — it instead multiplies your running total (a second kept 6 triples it, etc.). Hit exactly **24** → 40 pts. Under 24 → lose 4 pts per pip short. Each kept 6 also costs 6 pts. Over 24 → 0.
 
 ## B7. Lowball
-Best of 3 rounds. Roll 2 dice at a time and fill a collection of 10. From pairs 1–8, lock the **lower** die (either one if tied); the higher is discarded. On the **final pair** (pair 9), you lock **both** dice. Score = sum of all 10 collected. Any pair may be locked as rolled — including a low **1** — or rerolled at the cost of one of 6 shared rerolls. **Snake eyes** (both 1s) bust the round immediately, no reroll allowed.
+Best of 3 rounds. Roll 2 dice at a time and fill a collection of 10. From pairs 1–8, lock the **lower** die (either one if tied); the higher is discarded. On the **final pair** (pair 9), you lock **both** dice. Scoring: each locked die scores its pip value, except a **1 scores −5**; round score is the sum, floored at 0. Any pair may be locked as rolled — including a 1 — or rerolled at the cost of one of 6 shared rerolls. **Snake eyes** (both 1s) bust the round immediately, no reroll allowed.
 
 ## B8. Ascent
 Best of 3 rounds. Turn 1: roll 1 die, its value is the sum to beat. Each later turn you must roll strictly more dice than last turn (up to 10 total) and the new sum must exceed the previous sum. Sum > previous → cleared turn. Sum = previous → no progress, no bust, but dice count still advances. Sum < previous → round busts (0). Stop any time. Score = n(n+1)/2 where n is cleared turns (1 → 1 pt, 2 → 3, …, 10 → 55).
