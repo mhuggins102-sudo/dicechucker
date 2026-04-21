@@ -10,7 +10,7 @@ const MAX_HEIGHT = 48;
 const rules = `
   <p><strong>Clear the bar — but no 1s allowed.</strong></p>
   <p>Pick <strong>1–${MAX_DICE} dice</strong> to throw. Clear the bar if the sum is at or above the current height <em>and</em> none of the dice show a <strong>1</strong>.</p>
-  <p>Before you take your first attempt at a height you can <em>skip</em> ahead or <em>stop &amp; bank</em>. Once you attempt a height even once, you're committed — clear it or fail 3 times.</p>
+  <p>Before you take your first attempt at a height you can <em>skip</em> ahead to a higher bar. Once you attempt a height even once, you're committed — clear it or fail 3 times. Failing 3 times ends the event but you still keep your last cleared height.</p>
   <p>Miss <strong>3 times at the same height</strong> and the event ends. First height <strong>${START_HEIGHT}</strong>; bar rises by <strong>${HEIGHT_STEP}</strong>.</p>
 `;
 
@@ -133,19 +133,11 @@ export default {
             onClick: () => doJump(n),
           }));
         }
-        if (attempts === 0) {
-          if (height < MAX_HEIGHT) {
-            chooser.appendChild(button(`Skip to ${height + HEIGHT_STEP}`, {
-              variant: 'reroll',
-              onClick: skipHeight,
-            }));
-          }
-          if (cleared > 0) {
-            chooser.appendChild(button('Stop & Bank', {
-              variant: 'stop-bank',
-              onClick: finish,
-            }));
-          }
+        if (attempts === 0 && height < MAX_HEIGHT) {
+          chooser.appendChild(button(`Skip to ${height + HEIGHT_STEP}`, {
+            variant: 'reroll',
+            onClick: skipHeight,
+          }));
         }
         controls.appendChild(chooser);
       }
