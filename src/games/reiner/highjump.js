@@ -44,7 +44,8 @@ export default {
       function renderHead() {
         clear(head);
         head.appendChild(chip('Height', height, { tone: 'accent' }));
-        head.appendChild(chip('Attempt', `${attempts + 1} / ${ATTEMPTS_PER_HEIGHT}`));
+        const attemptLabel = Math.min(attempts + 1, ATTEMPTS_PER_HEIGHT);
+        head.appendChild(chip('Attempt', `${attemptLabel} / ${ATTEMPTS_PER_HEIGHT}`));
         head.appendChild(chip('Cleared', cleared, { tone: 'good' }));
       }
 
@@ -133,8 +134,9 @@ export default {
       }
 
       function finish() {
-        if (busy || done) return;
+        if (done) return;
         done = true;
+        busy = false;
         clear(controls);
         toast(`High Jump: ${cleared} pts`, { tone: cleared > 0 ? 'good' : 'bad' });
         renderHead();
