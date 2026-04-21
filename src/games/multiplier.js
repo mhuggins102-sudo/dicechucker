@@ -115,6 +115,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'multiplier',
+  decathlon: 'ryno',
   name: 'Sixes Multiplier',
   blurb: 'Add pips × multiplier. 6s grow the multiplier, 1s bust.',
   rulesHtml: rules,

@@ -146,6 +146,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'stairs',
+  decathlon: 'ryno',
   name: 'Stairs',
   blurb: 'Four stages of 1, 2, 3, 4 dice — no repeats per stage.',
   rulesHtml: rules,

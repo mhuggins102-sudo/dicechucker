@@ -190,6 +190,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'twentyfour',
+  decathlon: 'ryno',
   name: '24',
   blurb: 'Roll 2, keep 1 — five times. Land on 24 exactly.',
   rulesHtml: rules,

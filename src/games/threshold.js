@@ -232,6 +232,7 @@ function playSingleRound(host, roundIdx, updateHeader, minY) {
 
 export default {
   id: 'threshold',
+  decathlon: 'ryno',
   name: 'Threshold',
   blurb: 'Pick a target, hit it in one roll. Raise the bar each round.',
   rulesHtml: rules,

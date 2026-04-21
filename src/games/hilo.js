@@ -143,6 +143,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'hilo',
+  decathlon: 'ryno',
   name: 'Higher or Lower',
   blurb: 'Call the next die higher or lower. Wrong call busts.',
   rulesHtml: rules,

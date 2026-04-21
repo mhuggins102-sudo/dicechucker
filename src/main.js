@@ -1,4 +1,4 @@
-import { games, gameById } from './games/registry.js';
+import { games, gameById, decathlons, decathlonById, gamesByDecathlon } from './games/registry.js';
 import { getBestForEvent, recordEventScore, getBestDecathlon, recordDecathlon } from './storage.js';
 import { el, clear, button, chip, inlinePrompt } from './ui.js';
 
@@ -6,15 +6,17 @@ const stage = document.getElementById('stage');
 
 function route() {
   const hash = location.hash || '#/';
-  if (hash === '#/' || hash === '' || hash === '#/decathlon') return renderDecathlonHome();
-  if (hash === '#/decathlon/play') return runDecathlon();
-  if (hash === '#/arcade') return renderArcade();
+  if (hash === '#/' || hash === '') return renderHome();
+  for (const d of decathlons) {
+    if (hash === `#/${d.id}`) return renderArcade(d.id);
+    if (hash === `#/${d.id}/play`) return runDecathlon(d.id);
+  }
   if (hash.startsWith('#/event/')) {
     const id = hash.slice('#/event/'.length);
     const game = gameById(id);
     if (game) return runEvent(game);
   }
-  renderDecathlonHome();
+  renderHome();
 }
 
 window.addEventListener('hashchange', route);
@@ -42,45 +44,62 @@ function eventCard(g) {
   ]);
 }
 
-function renderDecathlonHome() {
-  const screen = mountScreen();
-  const best = getBestDecathlon();
-
-  screen.appendChild(el('section', { class: 'hero' }, [
-    el('h1', { text: 'Decathlon' }),
-    el('p', { text: `Play all ${games.length} events in sequence. Each event is best-of-N rounds. Your event scores sum to a grand total.` }),
+function decathlonHomeCard(d) {
+  const best = getBestDecathlon(d.id);
+  const events = gamesByDecathlon(d.id);
+  return el('section', { class: 'decathlon-home-card' }, [
+    el('h2', { text: d.name }),
+    el('p', { class: 'hero-tagline', text: d.tagline }),
+    el('p', { text: d.description }),
+    el('p', { class: 'hero-meta', text: `${events.length} events.` }),
     el('div', { class: 'button-row' }, [
-      button('Start decathlon', {
-        onClick: () => { location.hash = '#/decathlon/play'; },
+      button(`Start ${d.short} decathlon`, {
+        onClick: () => { location.hash = `#/${d.id}/play`; },
         variant: 'good',
+      }),
+      button('Browse events', {
+        onClick: () => { location.hash = `#/${d.id}`; },
+        variant: 'ghost',
       }),
     ]),
     el('p', {
       class: 'hero-meta',
-      text: best ? `Personal best: ${best.total} pts (${best.date}).` : 'No previous decathlon recorded.',
+      text: best ? `Personal best: ${best.total} pts (${best.date}).` : 'No previous run recorded.',
     }),
+  ]);
+}
+
+function renderHome() {
+  const screen = mountScreen();
+
+  screen.appendChild(el('section', { class: 'hero' }, [
+    el('h1', { text: 'Dicechucker' }),
+    el('p', { text: 'Two solo dice decathlons. Pick one to run.' }),
   ]));
 
-  screen.appendChild(el('div', { class: 'page-head' }, [
-    el('h2', { text: 'Events' }),
-    el('p', { text: 'Practice any event on its own. Scores here count as solo bests.' }),
-  ]));
-
-  const grid = el('div', { class: 'card-grid' });
-  for (const g of games) grid.appendChild(eventCard(g));
+  const grid = el('div', { class: 'decathlon-grid' });
+  for (const d of decathlons) grid.appendChild(decathlonHomeCard(d));
   screen.appendChild(grid);
 }
 
-function renderArcade() {
+function renderArcade(decathlonId) {
   const screen = mountScreen();
+  const d = decathlonById(decathlonId);
+  const events = gamesByDecathlon(decathlonId);
 
   screen.appendChild(el('div', { class: 'page-head' }, [
-    el('h1', { text: 'Arcade' }),
-    el('p', { text: 'Pick any event and play it on its own.' }),
+    el('h1', { text: d.name }),
+    el('p', { text: d.description }),
+    el('div', { class: 'button-row' }, [
+      button(`Run full ${d.short} decathlon`, {
+        onClick: () => { location.hash = `#/${d.id}/play`; },
+        variant: 'good',
+      }),
+    ]),
   ]));
 
   const grid = el('div', { class: 'card-grid' });
-  for (const g of games) grid.appendChild(eventCard(g));
+  for (const g of events) grid.appendChild(eventCard(g));
   screen.appendChild(grid);
 }
 
@@ -110,7 +129,6 @@ function eventHeader(game) {
 
 async function runEvent(game) {
   const screen = mountScreen();
-
   screen.appendChild(eventHeader(game));
 
   const playArea = el('div', { class: 'panel' });
@@ -133,23 +151,25 @@ async function runEvent(game) {
         onClick: () => runEvent(game),
         variant: 'good',
       }),
-      button('Back to arcade', {
-        onClick: () => { location.hash = '#/arcade'; },
+      button('Back to events', {
+        onClick: () => { location.hash = `#/${game.decathlon}`; },
         variant: 'ghost',
       }),
     ]),
   ]));
 }
 
-async function runDecathlon() {
+async function runDecathlon(decathlonId) {
+  const d = decathlonById(decathlonId);
   const screen = mountScreen();
 
-  const titleNode = el('h2', { text: 'Decathlon' });
+  const titleNode = el('h2', { text: d.name });
   const subNode = el('div', { class: 'sub', text: '' });
   const gameNameNode = el('div', { class: 'game-name', text: '' });
   const chev = el('span', { class: 'chev', 'aria-hidden': 'true' });
-  const chipsChip = chip('Chips', 0, { tone: 'good' });
   const totalChip = chip('Total Score', 0, { tone: 'accent' });
+  const useChips = decathlonId === 'ryno';
+  const chipsChip = useChips ? chip('Chips', 0, { tone: 'good' }) : null;
 
   const rulesBody = el('div', { class: 'rules', html: '' });
   const rulesCollapse = el('div', { class: 'rules-collapse', id: 'decathlon-rules' }, [rulesBody]);
@@ -167,20 +187,19 @@ async function runDecathlon() {
     chev,
   ]);
 
+  const headChildren = [titleBtn, totalChip];
+  if (chipsChip) headChildren.push(chipsChip);
+
   const header = el('section', { class: 'panel tight' }, [
-    el('div', { class: 'event-head' }, [
-      titleBtn,
-      totalChip,
-      chipsChip,
-    ]),
+    el('div', { class: 'event-head' }, headChildren),
     rulesCollapse,
   ]);
   screen.appendChild(header);
 
-  // Slot for the play panel (replaced each iteration).
   const playSlot = el('div');
   screen.appendChild(playSlot);
 
+  const events = gamesByDecathlon(decathlonId);
   const perEvent = {};
   let total = 0;
   let chips = 0;
@@ -190,11 +209,11 @@ async function runDecathlon() {
   }
   function setChips(value) {
     chips = value;
-    chipsChip.querySelector('.value').textContent = String(value);
+    if (chipsChip) chipsChip.querySelector('.value').textContent = String(value);
   }
 
-  // Random event order each run.
-  const order = shuffled(games);
+  // Ryno shuffles its events; Reiner runs in the classic decathlon order.
+  const order = useChips ? shuffled(events) : events.slice();
 
   for (let i = 0; i < order.length; i++) {
     const g = order[i];
@@ -212,10 +231,8 @@ async function runDecathlon() {
     const isLastEvent = i === order.length - 1;
     let bankedThisEvent = false;
 
-    const hooks = {
+    const hooks = useChips ? {
       async beforeFinalRound(currentBest) {
-        // Don't offer to bank when there's nothing to lock in,
-        // and don't offer on the final event (chip can't be spent).
         if (currentBest === 0) return 'play';
         if (isLastEvent) return 'play';
         const choice = await inlinePrompt(
@@ -233,12 +250,8 @@ async function runDecathlon() {
         return choice;
       },
       async afterRoundsExhausted(currentBest) {
-        // If the player just banked a chip for this event, don't turn
-        // around and ask them to spend one on the same event.
         if (bankedThisEvent) return 'stop';
         if (chips === 0) return 'stop';
-        // On the final event, chips have nowhere to go after this game,
-        // so auto-spend them silently for bonus rounds.
         if (isLastEvent) {
           setChips(chips - 1);
           return 'continue';
@@ -254,7 +267,7 @@ async function runDecathlon() {
         if (choice === 'continue') setChips(chips - 1);
         return choice;
       },
-    };
+    } : undefined;
 
     const score = await g.play(playArea, hooks);
     perEvent[g.id] = score;
@@ -263,9 +276,8 @@ async function runDecathlon() {
     recordEventScore(g.id, score);
   }
 
-  const { improved } = recordDecathlon(total, perEvent);
+  const { improved } = recordDecathlon(decathlonId, total, perEvent);
 
-  // Final results screen — drop the running header entirely.
   header.remove();
   clear(playSlot);
   const playArea = el('div', { class: 'panel' });
@@ -289,11 +301,11 @@ async function runDecathlon() {
   ]));
   table.appendChild(tbody);
 
-  playArea.appendChild(el('h2', { text: improved ? 'New personal best!' : 'Decathlon complete' }));
+  playArea.appendChild(el('h2', { text: improved ? 'New personal best!' : `${d.name} complete` }));
   playArea.appendChild(table);
   playArea.appendChild(el('div', { class: 'button-row' }, [
     button('Run again', {
-      onClick: runDecathlon,
+      onClick: () => runDecathlon(decathlonId),
       variant: 'good',
     }),
     button('Home', {

@@ -61,19 +61,20 @@ async function playRound(host, roundIdx, updateHeader) {
         class: 'chooser-label',
         text: `Roll ${rollsUsed + 1} of ${MAX_ROLLS} — pick 1–${cap} dice`,
       }));
-      const chooser = el('div', { class: 'dice-chooser' });
+      const chooser = el('div', { class: 'inline-chooser' });
       for (let n = 1; n <= cap; n++) {
         chooser.appendChild(button(String(n), {
-          variant: 'good',
+          variant: 'good die-count',
           onClick: () => doRoll(n),
         }));
       }
-      controls.appendChild(chooser);
       if (rollsUsed > 0) {
-        controls.appendChild(el('div', { class: 'button-row' }, [
-          button('Stop & Bank', { onClick: finish }),
-        ]));
+        chooser.appendChild(button('Stop & Bank', {
+          variant: 'stop-bank',
+          onClick: finish,
+        }));
       }
+      controls.appendChild(chooser);
     }
 
     async function doRoll(n) {
@@ -148,6 +149,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'snakes',
+  decathlon: 'ryno',
   name: 'Snakes',
   blurb: 'Roll for pips — every 1 is a snake worth −15.',
   rulesHtml: rules,

@@ -191,6 +191,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'ascent',
+  decathlon: 'ryno',
   name: 'Ascent',
   blurb: 'Each turn: more dice, a higher sum. Miss and you bust.',
   rulesHtml: rules,

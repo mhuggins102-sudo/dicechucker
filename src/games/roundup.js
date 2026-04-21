@@ -291,6 +291,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'roundup',
+  decathlon: 'ryno',
   name: 'Roundup',
   blurb: 'Build a set or collect uniques. Each roll must lock a die.',
   rulesHtml: rules,
