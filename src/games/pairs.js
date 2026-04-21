@@ -229,6 +229,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'pairs',
+  decathlon: 'ryno',
   name: 'Pair Sums',
   blurb: 'Lock pairs that add to the same total. Reroll for more or stop.',
   rulesHtml: rules,

@@ -35,20 +35,36 @@ export function recordEventScore(id, score) {
   return { improved: false, best };
 }
 
-export function getBestDecathlon() {
-  const data = readAll();
-  return data.bestDecathlon ?? null;
+// Per-decathlon bests. Legacy shape (single `bestDecathlon` object) is
+// treated as the Ryno decathlon's best.
+function bestsByDecathlon(data) {
+  if (data.bestDecathlons && typeof data.bestDecathlons === 'object') {
+    return data.bestDecathlons;
+  }
+  if (data.bestDecathlon && typeof data.bestDecathlon === 'object') {
+    return { ryno: data.bestDecathlon };
+  }
+  return {};
 }
 
-export function recordDecathlon(total, perEvent) {
+export function getBestDecathlon(decathlonId) {
   const data = readAll();
-  const prev = data.bestDecathlon?.total ?? 0;
+  const all = bestsByDecathlon(data);
+  return all[decathlonId] ?? null;
+}
+
+export function recordDecathlon(decathlonId, total, perEvent) {
+  const data = readAll();
+  const all = { ...bestsByDecathlon(data) };
+  const prev = all[decathlonId]?.total ?? 0;
   if (total > prev) {
-    data.bestDecathlon = {
+    all[decathlonId] = {
       total,
       perEvent,
       date: new Date().toISOString().slice(0, 10),
     };
+    data.bestDecathlons = all;
+    delete data.bestDecathlon;
     writeAll(data);
     return { improved: true };
   }

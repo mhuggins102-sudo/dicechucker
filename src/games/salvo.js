@@ -134,6 +134,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
 export default {
   id: 'salvo',
+  decathlon: 'ryno',
   name: 'Salvo',
   blurb: 'Throw 1–4 dice at a time. Any 1 busts the round.',
   rulesHtml: rules,
