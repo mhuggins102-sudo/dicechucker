@@ -66,7 +66,7 @@ async function playRound(host, roundIdx, updateHeader) {
       }
       for (const d of dieEls) tray.appendChild(d);
 
-      status.innerHTML = `Throwing ${n} die${n === 1 ? '' : 's'}…`;
+      status.innerHTML = `Throwing ${n} ${n === 1 ? 'die' : 'dice'}…`;
 
       await animateRollSequence(dieEls, values, {
         onReveal: (_i, _v, shown) => {
@@ -106,7 +106,8 @@ async function playRound(host, roundIdx, updateHeader) {
         return;
       }
 
-      status.innerHTML = `+${sum}. Running total: <strong>${total}</strong>. ${rollsLeft} roll${rollsLeft === 1 ? '' : 's'} left, up to ${Math.min(MAX_PER_ROLL, poolLeft)} dice.`;
+      const cap = Math.min(MAX_PER_ROLL, poolLeft);
+      status.innerHTML = `+${sum}. Running total: <strong>${total}</strong>. ${rollsLeft} roll${rollsLeft === 1 ? '' : 's'} left, up to ${cap} ${cap === 1 ? 'die' : 'dice'}.`;
       busy = false;
       renderControls();
     }

@@ -86,7 +86,7 @@ async function playAttempt(host, attemptIdx) {
         }));
         return;
       }
-      controls.appendChild(button(`Reroll ${unfrozen} unfrozen die${unfrozen === 1 ? '' : 's'}`, {
+      controls.appendChild(button(`Reroll ${unfrozen} unfrozen ${unfrozen === 1 ? 'die' : 'dice'}`, {
         variant: 'reroll',
         onClick: rerollUnfrozen,
       }));
