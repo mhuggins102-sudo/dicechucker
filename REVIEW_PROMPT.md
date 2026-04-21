@@ -124,18 +124,14 @@ Best of 3 rounds. Up to 3 throws per round, up to 4 dice each, 10 dice pool max.
 ## B6. 24
 Best of 3 rounds. 5 tries. Each try: roll 2 dice, keep 1. Kept dice add up, except a kept **6** doesn't add pips — it instead multiplies your running total (a second kept 6 triples it, etc.). Hit exactly **24** → 40 pts. Under 24 → lose 4 pts per pip short. Each kept 6 also costs 6 pts. Over 24 → 0.
 
-## B7. Threshold
-Best of 5 rounds. Pick a target **y** between 10 and 50. 3 tries per round to hit it in a single roll, throwing 1–8 dice per try. Any die showing a **1** wastes that try (no total counted). Each **6** multiplies the non-6 pips: total = (non-6 pips) × (1 + count of 6s). Example: {5, 2, 6, 6} → (5+2) × 3 = 21. Hit the target → round banks y. Miss all 3 tries → 0. Each round's y must be higher than your best hit so far.
+## B7. [Placeholder — under redesign]
+Under redesign. A replacement event will take this slot; for now it is a placeholder that scores 0.
 
 ## B8. Ascent
 Best of 3 rounds. Turn 1: roll 1 die, its value is the sum to beat. Each later turn you must roll strictly more dice than last turn (up to 10 total) and the new sum must exceed the previous sum. Sum > previous → cleared turn. Sum = previous → no progress, no bust, but dice count still advances. Sum < previous → round busts (0). Stop any time. Score = n(n+1)/2 where n is cleared turns (1 → 1 pt, 2 → 3, …, 10 → 55).
 
 ## B9. Roundup
-Best of 3 rounds. 10-die pool; roll 6 to start. Your first lock commits you to a path:
-- **Set path:** pick one value that appears 2+ times in the roll and lock every die showing it. Later rolls lock any more dice of that same value.
-- **Unique path:** lock every die whose value appears exactly once in the roll. Later rolls lock any die whose value is unique in that roll and not already locked.
-
-After locking, stop & bank or roll again (up to 6 of the remaining unlocked dice). If a roll can't lock at least one die under the chosen rule, round busts (0). Unique path auto-ends when all six values 1–6 are locked. Scoring: **Set** = pips + size². **Unique** = pips + 2 × longest consecutive run.
+Best of 3 rounds. 10-die pool; roll 6 to start. Pick any value that appears in the roll and lock every die showing it — this is your **committed value** for the round. Then stop & bank, or press: roll up to 6 of the remaining dice (fewer if fewer remain) and lock any that match your committed value. Continue pressing or stop after each press. If a press yields zero matches, the round busts (0). Scoring: sum of pips on locked dice + (size of set)². Four 5s → 20 + 16 = 36. Five 1s → 5 + 25 = 30.
 
 ## B10. Snakes
 Best of 3 rounds. Up to 10 dice over up to 5 rolls. Each roll, choose how many dice to throw (1 up to dice remaining). Pips 2–6 add to the total. Every **1** is a "snake" worth **−15**. Stop any time. A negative banked total scores 0.
