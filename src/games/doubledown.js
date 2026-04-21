@@ -1,4 +1,4 @@
-import { rollMany, createDie, animateRollSequence, applyState } from '../dice.js';
+import { rollMany, createDie, animateRollSequence, applyState, setDie } from '../dice.js';
 import { el, clear, button, chip, roundPills, toast, runRounds } from '../ui.js';
 
 const PAIRS = 5;
@@ -32,12 +32,19 @@ function describePair(a, b, pts, kind) {
 
 async function playRound(host, roundIdx, updateHeader) {
   return new Promise((resolve) => {
-    host.appendChild(el('div', { class: 'tray-label', text: 'Locked pairs' }));
-    const lockTray = el('div', { class: 'dice-tray' });
-    host.appendChild(lockTray);
-    host.appendChild(el('div', { class: 'tray-label', text: 'Current pair' }));
-    const rollTray = el('div', { class: 'dice-tray' });
-    host.appendChild(rollTray);
+    const lanesWrap = el('div', { class: 'lanes two-col' });
+    const laneEls = [];
+    const laneTrays = [];
+    for (let i = 0; i < PAIRS; i++) {
+      const label = el('div', { class: 'tray-label', text: `Pair ${i + 1}` });
+      const tray = el('div', { class: 'dice-tray' });
+      const wrap = el('div', { class: 'lane' }, [label, tray]);
+      lanesWrap.appendChild(wrap);
+      laneEls.push(wrap);
+      laneTrays.push(tray);
+    }
+    host.appendChild(lanesWrap);
+
     const status = el('div', {
       class: 'status',
       html: `Roll your first pair. You have ${REROLLS} rerolls for the whole round.`,
@@ -46,26 +53,34 @@ async function playRound(host, roundIdx, updateHeader) {
     const controls = el('div', { class: 'button-row' });
     host.appendChild(controls);
 
-    let locked = 0;
-    let total = 0;
+    let activePair = 0;
     let rerolls = REROLLS;
+    let total = 0;
     let currentPair = null;
     let done = false;
     let busy = false;
 
     function emit(extra = {}) {
       updateHeader({
-        locked,
+        locked: activePair,
         rerolls,
         score: total,
         ...extra,
       });
     }
 
+    function renderActivePair() {
+      for (let i = 0; i < PAIRS; i++) {
+        const isActive = i === activePair && !done;
+        laneEls[i].dataset.active = isActive ? 'true' : 'false';
+      }
+    }
+
     function renderRollControls() {
       clear(controls);
-      if (done) return;
-      controls.appendChild(button(`Roll pair ${locked + 1}`, {
+      renderActivePair();
+      if (done || activePair >= PAIRS) return;
+      controls.appendChild(button(`Roll pair ${activePair + 1}`, {
         onClick: rollNextPair,
         variant: 'good',
       }));
@@ -73,6 +88,7 @@ async function playRound(host, roundIdx, updateHeader) {
 
     function renderPairControls() {
       clear(controls);
+      renderActivePair();
       if (done || !currentPair) return;
       const { pts, kind } = currentPair;
       if (kind === 'snake') return;
@@ -89,40 +105,43 @@ async function playRound(host, roundIdx, updateHeader) {
       }
     }
 
-    async function animatePairRoll(msg) {
-      const values = rollMany(2);
-      const dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
-      clear(rollTray);
-      for (const d of dieEls) rollTray.appendChild(d);
-      status.innerHTML = msg;
-      await animateRollSequence(dieEls, values, {});
-      return { values, dieEls };
-    }
-
-    async function rollNextPair() {
-      if (busy || done) return;
+    async function rollIntoActivePair(initial) {
       busy = true;
       clear(controls);
-      const { values, dieEls } = await animatePairRoll(`Rolling pair ${locked + 1}…`);
+      renderActivePair();
+      const values = rollMany(2);
+      let dieEls;
+      if (initial) {
+        clear(laneTrays[activePair]);
+        dieEls = values.map(() => createDie(1, { placeholder: true, selectable: false }));
+        for (const d of dieEls) laneTrays[activePair].appendChild(d);
+      } else {
+        dieEls = currentPair.dieEls;
+        for (const d of dieEls) {
+          setDie(d, 1, { placeholder: true, selectable: false });
+        }
+      }
+      status.innerHTML = initial
+        ? `Rolling pair ${activePair + 1}…`
+        : `Rerolling pair ${activePair + 1}… (${rerolls} reroll${rerolls === 1 ? '' : 's'} left)`;
+      await animateRollSequence(dieEls, values, {});
       const [a, b] = values;
       const { kind, pts } = scorePair(a, b);
       currentPair = { a, b, dieEls, pts, kind };
       presentPair();
       busy = false;
+    }
+
+    async function rollNextPair() {
+      if (busy || done || currentPair) return;
+      await rollIntoActivePair(true);
     }
 
     async function rerollPair() {
       if (busy || done || rerolls <= 0 || !currentPair) return;
-      busy = true;
-      clear(controls);
       rerolls -= 1;
       emit();
-      const { values, dieEls } = await animatePairRoll(`Rerolling pair ${locked + 1}… (${rerolls} rerolls left)`);
-      const [a, b] = values;
-      const { kind, pts } = scorePair(a, b);
-      currentPair = { a, b, dieEls, pts, kind };
-      presentPair();
-      busy = false;
+      await rollIntoActivePair(false);
     }
 
     function presentPair() {
@@ -145,26 +164,24 @@ async function playRound(host, roundIdx, updateHeader) {
       if (busy || done || !currentPair) return;
       const { dieEls, pts } = currentPair;
       total += pts;
-      locked += 1;
-      dieEls.forEach(d => {
-        applyState(d, { frozen: true });
-        lockTray.appendChild(d);
-      });
-      clear(rollTray);
+      dieEls.forEach(d => applyState(d, { frozen: true }));
       currentPair = null;
+      activePair += 1;
       emit();
-      if (locked >= PAIRS) {
+      renderActivePair();
+      if (activePair >= PAIRS) {
         status.innerHTML = `All ${PAIRS} pairs locked — banking <strong>${total}</strong>.`;
         setTimeout(finish, 700);
         return;
       }
-      status.innerHTML = `Locked ${locked}/${PAIRS}. Running total: <strong>${total}</strong>. ${rerolls} reroll${rerolls === 1 ? '' : 's'} left.`;
+      status.innerHTML = `Locked ${activePair}/${PAIRS}. Running total: <strong>${total}</strong>. ${rerolls} reroll${rerolls === 1 ? '' : 's'} left.`;
       renderRollControls();
     }
 
     function bustRound() {
       done = true;
       clear(controls);
+      renderActivePair();
       toast(`Snake eyes — round busted.`, { tone: 'bad', duration: 2000 });
       emit({ bust: true, score: 0 });
       setTimeout(() => resolve(0), 1400);
@@ -173,6 +190,7 @@ async function playRound(host, roundIdx, updateHeader) {
     function finish() {
       done = true;
       clear(controls);
+      renderActivePair();
       toast(`Round ${roundIdx + 1}: ${total} pts`, { tone: 'good' });
       emit({ done: true });
       setTimeout(() => resolve(total), 900);
