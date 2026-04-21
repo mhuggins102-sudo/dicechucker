@@ -8,7 +8,7 @@ const ROUNDS = 3;
 const rules = `
   <p><strong>Pick a value on the opening roll and collect as many as you can.</strong></p>
   <p>You have 10 dice. Roll 6 to start. Pick any value that appears in the roll and lock every die showing it — this is your <strong>committed value</strong> for the round.</p>
-  <p>Then stop and bank, or press your luck: roll up to 6 of the remaining dice (fewer if fewer remain) and lock any that match your committed value. Continue pressing or stop after each press.</p>
+  <p>Then stop and bank, or press your luck. <strong>Each press rolls one fewer die than the last</strong> — 5, then 4, 3, 2, 1. Lock any dice matching your committed value; stop or press again.</p>
   <p><strong>Bust:</strong> if a press yields zero matches, the round scores 0.</p>
   <p><strong>Scoring:</strong> sum of pips on locked dice + (how many you locked)². Four 5s → 20 + 16 = 36. Five 1s → 5 + 25 = 30.</p>
   <p>Best of ${ROUNDS} rounds counts.</p>
@@ -50,9 +50,14 @@ async function playRound(host, roundIdx, updateHeader) {
     let commit = null;
     let done = false;
     let busy = false;
+    let rollsCompleted = 0;
 
     const remaining = () => POOL - locked.length;
-    const nextRoll = () => Math.min(ROLL_SIZE, remaining());
+    const nextRoll = () => {
+      const byCount = ROLL_SIZE - rollsCompleted;
+      if (byCount <= 0) return 0;
+      return Math.min(byCount, remaining());
+    };
     const score = () => scoreLocked(locked);
 
     function emit(extra = {}) {
@@ -111,6 +116,7 @@ async function playRound(host, roundIdx, updateHeader) {
       clear(controls);
       status.innerHTML = `Rolling ${ROLL_SIZE} dice…`;
       const { values, dieEls } = await rollDiceInto(ROLL_SIZE, `Rolling ${ROLL_SIZE} dice`);
+      rollsCompleted += 1;
       offerCommitChoice(values, dieEls);
       busy = false;
     }
@@ -163,6 +169,11 @@ async function playRound(host, roundIdx, updateHeader) {
         return;
       }
       const n = nextRoll();
+      if (n === 0) {
+        status.innerHTML = `${pathMsg} No more rolls — banking <strong>${score()}</strong>.`;
+        setTimeout(finish, 700);
+        return;
+      }
       status.innerHTML = `${pathMsg} Locked <strong>${locked.length}/${POOL}</strong>. Score so far: <strong>${score()}</strong>. Next roll must include at least one <strong>${commit}</strong>. Roll ${n} or stop.`;
       renderContinueControls();
     }
@@ -174,6 +185,7 @@ async function playRound(host, roundIdx, updateHeader) {
       const n = nextRoll();
       status.innerHTML = `Rolling ${n} ${n === 1 ? 'die' : 'dice'}…`;
       const { values, dieEls } = await rollDiceInto(n, `Rolling ${n} ${n === 1 ? 'die' : 'dice'}`);
+      rollsCompleted += 1;
 
       const lockIdx = [];
       for (let i = 0; i < values.length; i++) {
