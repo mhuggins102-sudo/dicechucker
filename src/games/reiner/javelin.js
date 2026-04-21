@@ -6,7 +6,7 @@ const ATTEMPTS = 3;
 
 const rules = `
   <p><strong>Only odd dice can be frozen.</strong></p>
-  <p>Roll 6 dice. Pick at least one <strong>odd</strong> die to freeze, then reroll the rest. Repeat until all 6 are frozen.</p>
+  <p>Roll 6 dice. Pick at least one <strong>odd</strong> die to freeze. Then either reroll the rest or stop and bank what you've frozen so far.</p>
   <p>If a reroll shows no odds to freeze, the attempt is invalid (0). ${ATTEMPTS} attempts — best counts. Score = sum of frozen dice.</p>
 `;
 
@@ -24,6 +24,7 @@ async function playAttempt(host, attemptIdx) {
     const dieEls = [];
     const frozen = new Set();
     const staged = new Set();
+    let pendingFreeze = false;
     let done = false;
     let busy = false;
 
@@ -75,12 +76,29 @@ async function playAttempt(host, attemptIdx) {
         }));
         return;
       }
-      const canFreeze = staged.size > 0;
-      const hasUnfrozen = DICE - frozen.size > 0;
-      controls.appendChild(button(
-        hasUnfrozen ? `Freeze staged (${staged.size}) & reroll rest` : 'Finish',
-        { variant: 'good', disabled: hasUnfrozen && !canFreeze, onClick: freezeAndReroll },
-      ));
+      if (pendingFreeze) {
+        const canFreeze = staged.size > 0;
+        controls.appendChild(button(
+          `Freeze staged (${staged.size})`,
+          { variant: 'good', disabled: !canFreeze, onClick: commitFreeze },
+        ));
+        return;
+      }
+      const unfrozen = DICE - frozen.size;
+      if (unfrozen === 0) {
+        controls.appendChild(button('Finish', {
+          variant: 'good',
+          onClick: () => finish(sumFrozen()),
+        }));
+        return;
+      }
+      controls.appendChild(button(`Reroll ${unfrozen} unfrozen die${unfrozen === 1 ? '' : 's'}`, {
+        variant: 'reroll',
+        onClick: rerollUnfrozen,
+      }));
+      controls.appendChild(button('Stop & Bank', {
+        onClick: () => finish(sumFrozen()),
+      }));
     }
 
     async function initialRoll() {
@@ -102,20 +120,20 @@ async function playAttempt(host, attemptIdx) {
         fail();
         return;
       }
-      status.innerHTML = `Click odd dice (${countOdds()} available) to stage, then freeze & reroll.`;
+      pendingFreeze = true;
+      status.innerHTML = `Click odd dice (${countOdds()} available) to stage, then freeze.`;
       busy = false;
       render();
     }
 
-    async function freezeAndReroll() {
-      if (busy) return;
-      const hasUnfrozen = DICE - frozen.size > 0;
-      if (hasUnfrozen && staged.size === 0) return;
+    async function commitFreeze() {
+      if (busy || staged.size === 0) return;
       busy = true;
       clear(controls);
 
       for (const i of staged) frozen.add(i);
       staged.clear();
+      pendingFreeze = false;
       render();
       clear(controls);
 
@@ -125,6 +143,16 @@ async function playAttempt(host, attemptIdx) {
         finish(sumFrozen());
         return;
       }
+
+      status.innerHTML = `Frozen so far: <strong>${sumFrozen()}</strong>. Reroll the rest, or stop & bank.`;
+      busy = false;
+      render();
+    }
+
+    async function rerollUnfrozen() {
+      if (busy || pendingFreeze) return;
+      busy = true;
+      clear(controls);
 
       const toReroll = [];
       for (let i = 0; i < DICE; i++) if (!frozen.has(i)) toReroll.push(i);
@@ -144,6 +172,7 @@ async function playAttempt(host, attemptIdx) {
         fail();
         return;
       }
+      pendingFreeze = true;
       status.innerHTML = `Click odd dice to stage. Frozen so far: <strong>${sumFrozen()}</strong>.`;
       busy = false;
       render();
