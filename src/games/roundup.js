@@ -6,68 +6,28 @@ const ROLL_SIZE = 6;
 const ROUNDS = 3;
 
 const rules = `
-  <p><strong>Build a set, or collect uniques — commit to one path.</strong></p>
-  <p>You have 10 dice. Roll 6 to start. Your first lock chooses the path:</p>
-  <p><strong>Set path:</strong> pick one value that appears 2+ times in the roll and lock every die showing it. Later rolls lock any more dice of that same value.</p>
-  <p><strong>Unique path:</strong> lock every die whose value appears exactly once in the roll. Later rolls lock any dice whose value is unique in the new roll and not already locked.</p>
-  <p>After locking, stop & bank or roll again (up to 6 of the remaining unlocked dice). If a roll can't lock at least one die, you bust for 0.</p>
-  <p><strong>Scoring:</strong></p>
-  <p>• Set: sum of pips + (how many you locked)². Four 5s → 20 + 16 = 36.<br>
-  • Unique: sum of pips + 2 × longest run of consecutive values. {1, 3, 4, 5} → 13 + 2×3 = 19.</p>
+  <p><strong>Pick a value on the opening roll and collect as many as you can.</strong></p>
+  <p>You have 10 dice. Roll 6 to start. Pick any value that appears in the roll and lock every die showing it — this is your <strong>committed value</strong> for the round.</p>
+  <p>Then stop and bank, or press your luck: roll up to 6 of the remaining dice (fewer if fewer remain) and lock any that match your committed value. Continue pressing or stop after each press.</p>
+  <p><strong>Bust:</strong> if a press yields zero matches, the round scores 0.</p>
+  <p><strong>Scoring:</strong> sum of pips on locked dice + (how many you locked)². Four 5s → 20 + 16 = 36. Five 1s → 5 + 25 = 30.</p>
   <p>Best of ${ROUNDS} rounds counts.</p>
 `;
 
 function sumOf(values) { return values.reduce((a, b) => a + b, 0); }
 
-function longestRun(values) {
-  if (!values.length) return 0;
-  const sorted = [...new Set(values)].sort((a, b) => a - b);
-  let best = 1, cur = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i] === sorted[i - 1] + 1) {
-      cur += 1;
-      if (cur > best) best = cur;
-    } else {
-      cur = 1;
-    }
-  }
-  return best;
-}
-
-function scoreLocked(path, locked) {
+function scoreLocked(locked) {
   if (!locked.length) return 0;
   const pips = sumOf(locked);
-  if (path === 'sets') return pips + locked.length * locked.length;
-  return pips + 2 * longestRun(locked);
+  return pips + locked.length * locked.length;
 }
 
-function countMap(values) {
-  const m = new Map();
-  for (const v of values) m.set(v, (m.get(v) || 0) + 1);
-  return m;
+function distinctValues(values) {
+  return [...new Set(values)].sort((a, b) => a - b);
 }
 
-function uniqueIndicesInRoll(values) {
-  const counts = countMap(values);
-  const out = [];
-  for (let i = 0; i < values.length; i++) {
-    if (counts.get(values[i]) === 1) out.push(i);
-  }
-  return out;
-}
-
-function repeatedValues(values) {
-  const counts = countMap(values);
-  return [...counts.entries()]
-    .filter(([, c]) => c >= 2)
-    .map(([v]) => v)
-    .sort((a, b) => a - b);
-}
-
-function pathChipLabel(path, setValue) {
-  if (!path) return '—';
-  if (path === 'sets') return `Set: ${setValue}s`;
-  return 'Unique';
+function commitChipLabel(commit) {
+  return commit ? `${commit}s` : '—';
 }
 
 async function playRound(host, roundIdx, updateHeader) {
@@ -80,27 +40,25 @@ async function playRound(host, roundIdx, updateHeader) {
     host.appendChild(rollTray);
     const status = el('div', {
       class: 'status',
-      html: `Roll ${ROLL_SIZE} dice to start. Your first lock sets your path.`,
+      html: `Roll ${ROLL_SIZE} dice to start. Pick the value you'll collect.`,
     });
     host.appendChild(status);
     const controls = el('div', { class: 'button-row' });
     host.appendChild(controls);
 
     const locked = [];
-    let path = null;
-    let setValue = null;
+    let commit = null;
     let done = false;
     let busy = false;
 
     const remaining = () => POOL - locked.length;
     const nextRoll = () => Math.min(ROLL_SIZE, remaining());
-    const score = () => scoreLocked(path, locked);
+    const score = () => scoreLocked(locked);
 
     function emit(extra = {}) {
       updateHeader({
         locked: locked.length,
-        path,
-        setValue,
+        commit,
         score: score(),
         ...extra,
       });
@@ -151,45 +109,28 @@ async function playRound(host, roundIdx, updateHeader) {
       clear(controls);
       status.innerHTML = `Rolling ${ROLL_SIZE} dice…`;
       const { values, dieEls } = await rollDiceInto(ROLL_SIZE, `Rolling ${ROLL_SIZE} dice`);
-      offerPathChoice(values, dieEls);
+      offerCommitChoice(values, dieEls);
       busy = false;
     }
 
-    function offerPathChoice(values, dieEls) {
-      const setVals = repeatedValues(values);
-      const uniqueIdx = uniqueIndicesInRoll(values);
-
+    function offerCommitChoice(values, dieEls) {
       clear(controls);
-      for (const v of setVals) {
+      for (const v of distinctValues(values)) {
         const count = values.filter(x => x === v).length;
         controls.appendChild(button(`Lock ${count} × ${v}s`, {
-          onClick: () => chooseSets(v, values, dieEls),
+          onClick: () => chooseCommit(v, values, dieEls),
           variant: 'good',
         }));
       }
-      if (uniqueIdx.length > 0) {
-        const pips = uniqueIdx.map(i => values[i]).sort((a, b) => a - b);
-        controls.appendChild(button(`Lock uniques: ${pips.join(', ')}`, {
-          onClick: () => chooseUnique(uniqueIdx, values, dieEls),
-          variant: 'reroll',
-        }));
-      }
-      status.innerHTML = `Pick your path: lock a repeated value <em>or</em> lock the uniques.`;
+      status.innerHTML = `Pick the value you'll collect this round.`;
     }
 
-    function chooseSets(v, values, dieEls) {
-      path = 'sets';
-      setValue = v;
+    function chooseCommit(v, values, dieEls) {
+      commit = v;
       clear(controls);
       const idx = [];
       for (let i = 0; i < values.length; i++) if (values[i] === v) idx.push(i);
-      commitLocks(values, dieEls, idx, `Locked the ${v}s — sets path.`);
-    }
-
-    function chooseUnique(uniqueIdx, values, dieEls) {
-      path = 'unique';
-      clear(controls);
-      commitLocks(values, dieEls, uniqueIdx, `Locked ${uniqueIdx.length} unique value${uniqueIdx.length === 1 ? '' : 's'} — unique path.`);
+      commitLocks(values, dieEls, idx, `Committed to ${v}s — locked ${idx.length}.`);
     }
 
     function commitLocks(values, dieEls, lockIdx, pathMsg) {
@@ -218,16 +159,8 @@ async function playRound(host, roundIdx, updateHeader) {
         setTimeout(finish, 700);
         return;
       }
-      if (path === 'unique' && new Set(locked).size >= 6) {
-        status.innerHTML = `${pathMsg} All six values (1–6) locked — you can't add any more. Banking <strong>${score()}</strong>.`;
-        setTimeout(finish, 700);
-        return;
-      }
       const n = nextRoll();
-      const rule = path === 'sets'
-        ? `Next roll must include at least one <strong>${setValue}</strong>.`
-        : `Next roll must show a unique value you haven't locked yet.`;
-      status.innerHTML = `${pathMsg} Locked <strong>${locked.length}/${POOL}</strong>. Score so far: <strong>${score()}</strong>. ${rule} Roll ${n} or stop.`;
+      status.innerHTML = `${pathMsg} Locked <strong>${locked.length}/${POOL}</strong>. Score so far: <strong>${score()}</strong>. Next roll must include at least one <strong>${commit}</strong>. Roll ${n} or stop.`;
       renderContinueControls();
     }
 
@@ -239,24 +172,14 @@ async function playRound(host, roundIdx, updateHeader) {
       status.innerHTML = `Rolling ${n} ${n === 1 ? 'die' : 'dice'}…`;
       const { values, dieEls } = await rollDiceInto(n, `Rolling ${n} ${n === 1 ? 'die' : 'dice'}`);
 
-      let lockIdx = [];
-      if (path === 'sets') {
-        for (let i = 0; i < values.length; i++) {
-          if (values[i] === setValue) lockIdx.push(i);
-        }
-      } else {
-        const counts = countMap(values);
-        const lockedSet = new Set(locked);
-        for (let i = 0; i < values.length; i++) {
-          if (counts.get(values[i]) === 1 && !lockedSet.has(values[i])) lockIdx.push(i);
-        }
+      const lockIdx = [];
+      for (let i = 0; i < values.length; i++) {
+        if (values[i] === commit) lockIdx.push(i);
       }
 
       if (lockIdx.length === 0) {
         dieEls.forEach(d => applyState(d, { bust: true }));
-        const reason = path === 'sets'
-          ? `no ${setValue}s in the roll`
-          : `no new unique values in the roll`;
+        const reason = `no ${commit}s in the roll`;
         status.innerHTML = `Rolled ${values.join(', ')} — ${reason}. Round busted.`;
         bustRound(reason);
         return;
@@ -293,7 +216,7 @@ export default {
   id: 'roundup',
   decathlon: 'ryno',
   name: 'Roundup',
-  blurb: 'Build a set or collect uniques. Each roll must lock a die.',
+  blurb: 'Pick a value on the opening roll and collect as many as you can.',
   rulesHtml: rules,
   rounds: ROUNDS,
 
@@ -310,7 +233,7 @@ export default {
     const renderHead = (ctx = {}) => {
       clear(head);
       head.appendChild(chip('Locked', `${ctx.locked ?? 0} / ${POOL}`));
-      head.appendChild(chip('Path', pathChipLabel(ctx.path, ctx.setValue)));
+      head.appendChild(chip('Value', commitChipLabel(ctx.commit)));
       head.appendChild(chip('Score', ctx.score ?? 0, { tone: ctx.bust ? 'bust' : 'accent' }));
       head.appendChild(chip('Best round', Math.max(0, ...results), { tone: 'accent' }));
     };
