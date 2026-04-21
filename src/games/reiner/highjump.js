@@ -10,7 +10,7 @@ const MAX_HEIGHT = 30;
 const rules = `
   <p><strong>Clear the bar. Each success raises it by 2.</strong></p>
   <p>Roll <strong>${DICE} dice</strong>. If the total is at or above the current height, you clear it. Miss <strong>3 times at the same height</strong> and the event ends.</p>
-  <p>Before you take your first attempt at a height you can <em>skip</em> ahead — but once you've tried a height at least once, you're committed to it.</p>
+  <p>Before you take your first attempt at a height you can <em>skip</em> ahead or <em>stop &amp; bank</em>. Once you attempt a height even once, you're committed — clear it or fail 3 times.</p>
   <p>First height: <strong>${START_HEIGHT}</strong>. Score = highest height you cleared (or 0 if you fail at a height without clearing any).</p>
 `;
 
@@ -119,14 +119,16 @@ export default {
         clear(controls);
         if (done) return;
         controls.appendChild(button(`Jump at ${height}`, { variant: 'good', onClick: doJump }));
-        if (attempts === 0 && height < MAX_HEIGHT) {
-          controls.appendChild(button(`Skip to ${height + HEIGHT_STEP}`, {
-            variant: 'reroll',
-            onClick: skipHeight,
-          }));
-        }
-        if (cleared > 0) {
-          controls.appendChild(button('Stop & Bank', { onClick: finish }));
+        if (attempts === 0) {
+          if (height < MAX_HEIGHT) {
+            controls.appendChild(button(`Skip to ${height + HEIGHT_STEP}`, {
+              variant: 'reroll',
+              onClick: skipHeight,
+            }));
+          }
+          if (cleared > 0) {
+            controls.appendChild(button('Stop & Bank', { onClick: finish }));
+          }
         }
       }
 
