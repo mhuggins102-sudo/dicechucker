@@ -154,6 +154,7 @@ async function playAttempt(host, attemptIdx) {
       if (runupFrozen.size >= DICE) {
         status.innerHTML = `All ${DICE} dice frozen (sum ${total}). Moving to jump.`;
         await sleep(500);
+        busy = false;
         startJump();
         return;
       }
