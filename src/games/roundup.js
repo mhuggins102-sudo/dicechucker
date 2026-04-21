@@ -218,6 +218,11 @@ async function playRound(host, roundIdx, updateHeader) {
         setTimeout(finish, 700);
         return;
       }
+      if (path === 'unique' && new Set(locked).size >= 6) {
+        status.innerHTML = `${pathMsg} All six values (1–6) locked — you can't add any more. Banking <strong>${score()}</strong>.`;
+        setTimeout(finish, 700);
+        return;
+      }
       const n = nextRoll();
       const rule = path === 'sets'
         ? `Next roll must include at least one <strong>${setValue}</strong>.`
